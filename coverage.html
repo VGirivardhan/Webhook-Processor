@@ -1,0 +1,2817 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>webhook-api: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">webhook-processor/cmd/webhook-api/main.go (0.0%)</option>
+				
+				<option value="file1">webhook-processor/cmd/webhook-processor/main.go (0.0%)</option>
+				
+				<option value="file2">webhook-processor/internal/application/services/webhook_application_service.go (100.0%)</option>
+				
+				<option value="file3">webhook-processor/internal/application/usecases/webhook_processor.go (100.0%)</option>
+				
+				<option value="file4">webhook-processor/internal/application/workers/webhook_worker.go (0.0%)</option>
+				
+				<option value="file5">webhook-processor/internal/application/workers/worker_pool.go (0.0%)</option>
+				
+				<option value="file6">webhook-processor/internal/config/config.go (0.0%)</option>
+				
+				<option value="file7">webhook-processor/internal/domain/entities/webhook_queue.go (100.0%)</option>
+				
+				<option value="file8">webhook-processor/internal/domain/enums/event_type.go (100.0%)</option>
+				
+				<option value="file9">webhook-processor/internal/domain/enums/webhook_status.go (100.0%)</option>
+				
+				<option value="file10">webhook-processor/internal/infrastructure/database/database.go (0.0%)</option>
+				
+				<option value="file11">webhook-processor/internal/infrastructure/metrics/webhook_metrics.go (0.0%)</option>
+				
+				<option value="file12">webhook-processor/internal/infrastructure/models/webhook_config_model.go (0.0%)</option>
+				
+				<option value="file13">webhook-processor/internal/infrastructure/models/webhook_queue_model.go (0.0%)</option>
+				
+				<option value="file14">webhook-processor/internal/infrastructure/repositories/webhook_config_repository_impl.go (40.0%)</option>
+				
+				<option value="file15">webhook-processor/internal/infrastructure/repositories/webhook_queue_repository_impl.go (23.7%)</option>
+				
+				<option value="file16">webhook-processor/internal/infrastructure/services/webhook_service_impl.go (100.0%)</option>
+				
+				<option value="file17">webhook-processor/internal/mocks/mock_webhook_config_repository.go (0.0%)</option>
+				
+				<option value="file18">webhook-processor/internal/mocks/mock_webhook_queue_repository.go (0.0%)</option>
+				
+				<option value="file19">webhook-processor/internal/mocks/mock_webhook_service.go (0.0%)</option>
+				
+				<option value="file20">webhook-processor/internal/transport/http/dtos.go (100.0%)</option>
+				
+				<option value="file21">webhook-processor/internal/transport/http/endpoints.go (91.7%)</option>
+				
+				<option value="file22">webhook-processor/internal/transport/http/handler.go (100.0%)</option>
+				
+				<option value="file23">webhook-processor/internal/transport/http/middleware.go (92.0%)</option>
+				
+				<option value="file24">webhook-processor/internal/transport/http/service.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "context"
+        "fmt"
+        "net/http"
+        "os"
+        "os/signal"
+        "syscall"
+        "time"
+
+        "github.com/go-kit/log"
+        "github.com/go-kit/log/level"
+
+        "webhook-processor/internal/application/services"
+        "webhook-processor/internal/application/usecases"
+        "webhook-processor/internal/config"
+        "webhook-processor/internal/infrastructure/database"
+        "webhook-processor/internal/infrastructure/repositories"
+        infraServices "webhook-processor/internal/infrastructure/services"
+        httpTransport "webhook-processor/internal/transport/http"
+)
+
+func main() <span class="cov0" title="0">{
+        // Load configuration
+        cfg, err := config.LoadConfig()
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, "Failed to load configuration: %v\n", err)
+                os.Exit(1)
+        }</span>
+
+        // Setup logger
+        <span class="cov0" title="0">logger := setupLogger()
+        level.Info(logger).Log("msg", "starting webhook API server")
+
+        // Initialize database
+        db, err := database.NewDatabase(cfg)
+        if err != nil </span><span class="cov0" title="0">{
+                level.Error(logger).Log("msg", "failed to initialize database", "error", err)
+                os.Exit(1)
+        }</span>
+        <span class="cov0" title="0">level.Info(logger).Log("msg", "database connection established")
+
+        // Initialize repositories
+        webhookQueueRepo, err := repositories.NewWebhookQueueRepository(db)
+        if err != nil </span><span class="cov0" title="0">{
+                level.Error(logger).Log("msg", "failed to create webhook queue repository", "error", err)
+                os.Exit(1)
+        }</span>
+        <span class="cov0" title="0">webhookConfigRepo, err := repositories.NewWebhookConfigRepository(db)
+        if err != nil </span><span class="cov0" title="0">{
+                level.Error(logger).Log("msg", "failed to create webhook config repository", "error", err)
+                os.Exit(1)
+        }</span>
+
+        // Initialize infrastructure services
+        <span class="cov0" title="0">webhookInfraService := infraServices.NewWebhookService(cfg.HTTPClient)
+
+        // Initialize use cases
+        webhookProcessor := usecases.NewWebhookProcessor(
+                webhookQueueRepo,
+                webhookConfigRepo,
+                webhookInfraService,
+                logger,
+        )
+
+        // Initialize application services
+        appService := services.NewWebhookApplicationService(webhookProcessor)
+
+        // Create HTTP transport service
+        httpService := httpTransport.NewService(appService)
+
+        // Create HTTP handler with all routes and middleware
+        router := httpTransport.NewHTTPHandler(httpService, log.With(logger, "component", "http"))
+
+        // Setup HTTP server
+        httpServer := &amp;http.Server{
+                Addr:         fmt.Sprintf(":%d", cfg.HTTPServer.Port),
+                Handler:      router,
+                ReadTimeout:  cfg.HTTPServer.ReadTimeout,
+                WriteTimeout: cfg.HTTPServer.WriteTimeout,
+                IdleTimeout:  cfg.HTTPServer.IdleTimeout,
+        }
+
+        // Start server in goroutine
+        go func() </span><span class="cov0" title="0">{
+                level.Info(logger).Log("msg", "starting HTTP server", "port", cfg.HTTPServer.Port)
+                if err := httpServer.ListenAndServe(); err != nil &amp;&amp; err != http.ErrServerClosed </span><span class="cov0" title="0">{
+                        level.Error(logger).Log("msg", "HTTP server failed", "error", err)
+                        os.Exit(1)
+                }</span>
+        }()
+
+        // Wait for interrupt signal
+        <span class="cov0" title="0">quit := make(chan os.Signal, 1)
+        signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+        &lt;-quit
+
+        level.Info(logger).Log("msg", "shutting down HTTP server")
+
+        // Graceful shutdown
+        ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+        defer cancel()
+
+        if err := httpServer.Shutdown(ctx); err != nil </span><span class="cov0" title="0">{
+                level.Error(logger).Log("msg", "failed to shutdown HTTP server gracefully", "error", err)
+                os.Exit(1)
+        }</span>
+
+        <span class="cov0" title="0">level.Info(logger).Log("msg", "HTTP server shutdown complete")</span>
+}
+
+// setupLogger creates and configures a logger with default settings
+func setupLogger() log.Logger <span class="cov0" title="0">{
+        logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stdout))
+        logger = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
+        return logger
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package main
+
+import (
+        "fmt"
+        "net/http"
+        "os"
+        "os/signal"
+        "syscall"
+
+        "github.com/go-kit/log"
+        "github.com/go-kit/log/level"
+        "github.com/prometheus/client_golang/prometheus/promhttp"
+
+        "webhook-processor/internal/application/usecases"
+        "webhook-processor/internal/application/workers"
+        "webhook-processor/internal/config"
+        "webhook-processor/internal/infrastructure/database"
+        "webhook-processor/internal/infrastructure/metrics"
+        "webhook-processor/internal/infrastructure/repositories"
+        "webhook-processor/internal/infrastructure/services"
+)
+
+func main() <span class="cov0" title="0">{
+        // Load configuration
+        cfg, err := config.LoadConfig()
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Fprintf(os.Stderr, "Failed to load configuration: %v\n", err)
+                os.Exit(1)
+        }</span>
+
+        // Setup logger
+        <span class="cov0" title="0">logger := setupLogger()
+        level.Info(logger).Log("msg", "starting webhook processor", "version", "1.0.0")
+
+        // Initialize database
+        db, err := database.NewDatabase(cfg)
+        if err != nil </span><span class="cov0" title="0">{
+                level.Error(logger).Log("msg", "failed to initialize database", "error", err)
+                os.Exit(1)
+        }</span>
+        <span class="cov0" title="0">level.Info(logger).Log("msg", "database connection established")
+
+        // Initialize repositories
+        webhookQueueRepo, err := repositories.NewWebhookQueueRepository(db)
+        if err != nil </span><span class="cov0" title="0">{
+                level.Error(logger).Log("msg", "failed to create webhook queue repository", "error", err)
+                os.Exit(1)
+        }</span>
+        <span class="cov0" title="0">webhookConfigRepo, err := repositories.NewWebhookConfigRepository(db)
+        if err != nil </span><span class="cov0" title="0">{
+                level.Error(logger).Log("msg", "failed to create webhook config repository", "error", err)
+                os.Exit(1)
+        }</span>
+
+        // Initialize metrics
+        <span class="cov0" title="0">webhookMetrics := metrics.NewWebhookMetrics()
+
+        // Initialize services
+        webhookService := services.NewWebhookService(cfg.HTTPClient)
+
+        // Initialize use cases
+        webhookProcessor := usecases.NewWebhookProcessor(
+                webhookQueueRepo,
+                webhookConfigRepo,
+                webhookService,
+                logger,
+        )
+
+        // Initialize worker pool
+        workerPoolConfig := config.GetDefaultWorkerPoolConfig()
+        workerPool := workers.NewWorkerPool(webhookProcessor, logger, workerPoolConfig, webhookMetrics)
+
+        // Start worker pool
+        if err := workerPool.Start(); err != nil </span><span class="cov0" title="0">{
+                level.Error(logger).Log("msg", "failed to start worker pool", "error", err)
+                os.Exit(1)
+        }</span>
+        <span class="cov0" title="0">level.Info(logger).Log("msg", "worker pool started successfully")
+
+        // Start metrics server
+        go func() </span><span class="cov0" title="0">{
+                http.Handle("/metrics", promhttp.Handler())
+                level.Info(logger).Log("msg", "starting metrics server", "port", 8081)
+                if err := http.ListenAndServe(":8081", nil); err != nil </span><span class="cov0" title="0">{
+                        level.Error(logger).Log("msg", "metrics server failed", "error", err)
+                }</span>
+        }()
+
+        // Setup graceful shutdown
+
+        // Handle shutdown signals
+        <span class="cov0" title="0">sigChan := make(chan os.Signal, 1)
+        signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+        // Wait for shutdown signal
+        &lt;-sigChan
+        level.Info(logger).Log("msg", "shutdown signal received, stopping worker pool")
+
+        // Stop worker pool
+        if err := workerPool.Stop(); err != nil </span><span class="cov0" title="0">{
+                level.Error(logger).Log("msg", "failed to stop worker pool", "error", err)
+        }</span> else<span class="cov0" title="0"> {
+                level.Info(logger).Log("msg", "worker pool stopped successfully")
+        }</span>
+
+        // Close database connection
+        <span class="cov0" title="0">if sqlDB, err := db.DB(); err == nil </span><span class="cov0" title="0">{
+                sqlDB.Close()
+        }</span>
+
+        <span class="cov0" title="0">level.Info(logger).Log("msg", "webhook processor shutdown complete")</span>
+}
+
+// setupLogger creates and configures a logger with default settings
+func setupLogger() log.Logger <span class="cov0" title="0">{
+        // Use text format logger with info level by default
+        logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stdout))
+        logger = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
+        logger = level.NewFilter(logger, level.AllowInfo())
+        return logger
+}</span>
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package services
+
+import (
+        "context"
+        "time"
+
+        "webhook-processor/internal/application/usecases"
+        "webhook-processor/internal/domain/enums"
+)
+
+// WebhookApplicationService defines the application service interface for webhook operations
+// This layer orchestrates business logic and coordinates between transport and domain layers
+type WebhookApplicationService interface {
+        // CreateWebhook creates a new webhook entry
+        CreateWebhook(ctx context.Context, req CreateWebhookCommand) (*CreateWebhookResult, error)
+
+        // GetHealth returns service health status
+        GetHealth(ctx context.Context) (*HealthResult, error)
+}
+
+// Commands (Input DTOs)
+
+// CreateWebhookCommand represents a command to create a webhook
+type CreateWebhookCommand struct {
+        EventType enums.EventType `json:"event_type" validate:"required"`
+        EventID   string          `json:"event_id"`
+        ConfigID  int64           `json:"config_id" validate:"required,min=1"`
+}
+
+// Results (Output DTOs)
+
+// CreateWebhookResult represents the result of creating a webhook
+type CreateWebhookResult struct {
+        Success   bool      `json:"success"`
+        Message   string    `json:"message"`
+        QueueID   string    `json:"queue_id,omitempty"`
+        CreatedAt time.Time `json:"created_at,omitempty"`
+}
+
+// HealthResult represents service health status
+type HealthResult struct {
+        Status       string            `json:"status"`
+        Version      string            `json:"version"`
+        Timestamp    time.Time         `json:"timestamp"`
+        Dependencies map[string]string `json:"dependencies"`
+        Uptime       time.Duration     `json:"uptime"`
+}
+
+// webhookApplicationServiceImpl implements WebhookApplicationService
+type webhookApplicationServiceImpl struct {
+        webhookProcessor *usecases.WebhookProcessor
+        startTime        time.Time
+}
+
+// NewWebhookApplicationService creates a new webhook application service
+func NewWebhookApplicationService(webhookProcessor *usecases.WebhookProcessor) WebhookApplicationService <span class="cov8" title="1">{
+        return &amp;webhookApplicationServiceImpl{
+                webhookProcessor: webhookProcessor,
+                startTime:        time.Now().UTC(),
+        }
+}</span>
+
+// CreateWebhook creates a new webhook entry
+func (s *webhookApplicationServiceImpl) CreateWebhook(ctx context.Context, cmd CreateWebhookCommand) (*CreateWebhookResult, error) <span class="cov8" title="1">{
+        // Validate command
+        if err := cmd.EventType.Validate(); err != nil </span><span class="cov8" title="1">{
+                return &amp;CreateWebhookResult{
+                        Success: false,
+                        Message: "Invalid event type: " + err.Error(),
+                }, err
+        }</span>
+
+        // Call use case
+        <span class="cov8" title="1">err := s.webhookProcessor.CreateWebhookEntry(ctx, cmd.EventType, cmd.EventID, cmd.ConfigID)
+        if err != nil </span><span class="cov8" title="1">{
+                return &amp;CreateWebhookResult{
+                        Success: false,
+                        Message: "Failed to create webhook: " + err.Error(),
+                }, err
+        }</span>
+
+        <span class="cov8" title="1">return &amp;CreateWebhookResult{
+                Success:   true,
+                Message:   "Webhook created successfully",
+                CreatedAt: time.Now().UTC(),
+        }, nil</span>
+}
+
+// GetHealth returns service health status
+func (s *webhookApplicationServiceImpl) GetHealth(ctx context.Context) (*HealthResult, error) <span class="cov8" title="1">{
+        return &amp;HealthResult{
+                Status:    "healthy",
+                Version:   "1.0.0",
+                Timestamp: time.Now().UTC(),
+                Dependencies: map[string]string{
+                        "database": "connected",
+                        "workers":  "running",
+                },
+                Uptime: time.Since(s.startTime),
+        }, nil
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package usecases
+
+import (
+        "context"
+        "fmt"
+        "math/rand"
+        "net/http"
+        "time"
+
+        "github.com/go-kit/log"
+
+        "webhook-processor/internal/domain/entities"
+        "webhook-processor/internal/domain/enums"
+        "webhook-processor/internal/domain/repositories"
+        "webhook-processor/internal/domain/services"
+)
+
+// WebhookProcessor handles webhook processing logic
+type WebhookProcessor struct {
+        webhookQueueRepo  repositories.WebhookQueueRepository
+        webhookConfigRepo repositories.WebhookConfigRepository
+        webhookService    services.WebhookService
+        logger            log.Logger
+}
+
+// NewWebhookProcessor creates a new webhook processor
+func NewWebhookProcessor(
+        webhookQueueRepo repositories.WebhookQueueRepository,
+        webhookConfigRepo repositories.WebhookConfigRepository,
+        webhookService services.WebhookService,
+        logger log.Logger,
+) *WebhookProcessor <span class="cov8" title="1">{
+        return &amp;WebhookProcessor{
+                webhookQueueRepo:  webhookQueueRepo,
+                webhookConfigRepo: webhookConfigRepo,
+                webhookService:    webhookService,
+                logger:            logger,
+        }
+}</span>
+
+// CreateWebhookEntry creates a new webhook queue entry for processing
+func (wp *WebhookProcessor) CreateWebhookEntry(ctx context.Context, eventType enums.EventType, eventID string, configID int64) error <span class="cov8" title="1">{
+        // Get webhook config
+        config, err := wp.webhookConfigRepo.GetByID(ctx, configID)
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("failed to get webhook config: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">if config == nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("webhook config not found: %d", configID)
+        }</span>
+
+        <span class="cov8" title="1">if !config.IsActive </span><span class="cov8" title="1">{
+                return fmt.Errorf("webhook config is not active: %d", configID)
+        }</span>
+
+        // Create webhook queue entry
+        <span class="cov8" title="1">webhook := &amp;entities.WebhookQueue{
+                EventType:   eventType,
+                EventID:     eventID,
+                ConfigID:    configID,
+                WebhookURL:  config.WebhookURL,
+                Status:      enums.WebhookStatusPending,
+                RetryCount:  0,
+                NextRetryAt: time.Now().UTC(),
+                CreatedAt:   time.Now().UTC(),
+                UpdatedAt:   time.Now().UTC(),
+        }
+
+        if err := wp.webhookQueueRepo.Create(ctx, webhook); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("failed to create webhook queue entry: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">wp.logger.Log("level", "info", "msg", "webhook entry created",
+                "queue_id", webhook.QueueID, "event_type", eventType, "event_id", eventID)
+
+        return nil</span>
+}
+
+// ProcessWebhook processes a single webhook
+func (wp *WebhookProcessor) ProcessWebhook(ctx context.Context, webhook *entities.WebhookQueue, workerID string) error <span class="cov8" title="1">{
+        wp.logger.Log("level", "info", "msg", "processing webhook",
+                "queue_id", webhook.QueueID, "worker_id", workerID, "retry_count", webhook.RetryCount)
+
+        // Record attempt start
+        attemptStartTime := time.Now().UTC()
+
+        wp.logger.Log("level", "debug", "msg", "recording retry attempt",
+                "queue_id", webhook.QueueID, "retry_level", webhook.RetryCount,
+                "retry_count", webhook.RetryCount, "started_at", attemptStartTime)
+
+        // Send webhook
+        response, err := wp.webhookService.SendWebhook(ctx, webhook)
+        attemptEndTime := time.Now().UTC()
+        durationMs := attemptEndTime.Sub(attemptStartTime).Milliseconds()
+
+        var httpStatus int
+        var responseBody string
+        if response != nil </span><span class="cov8" title="1">{
+                httpStatus = response.StatusCode
+                responseBody = response.Body
+        }</span>
+
+        <span class="cov8" title="1">var errorMsg string
+        if err != nil </span><span class="cov8" title="1">{
+                errorMsg = err.Error()
+        }</span> else<span class="cov8" title="1"> if response != nil &amp;&amp; !wp.isSuccessfulResponse(response.StatusCode) </span><span class="cov8" title="1">{
+                // HTTP request succeeded but got non-2xx status code - treat as error
+                errorMsg = fmt.Sprintf("HTTP %d: %s", response.StatusCode, http.StatusText(response.StatusCode))
+        }</span>
+
+        // Update retry attempt in database
+        <span class="cov8" title="1">if updateErr := wp.webhookQueueRepo.UpdateRetryAttempt(ctx, webhook.ID, webhook.RetryCount, attemptStartTime, &amp;attemptEndTime, durationMs, httpStatus, responseBody, errorMsg); updateErr != nil </span><span class="cov8" title="1">{
+                wp.logger.Log("level", "error", "msg", "failed to update retry attempt",
+                        "queue_id", webhook.QueueID, "error", updateErr)
+        }</span>
+
+        // Update webhook's last status for tracking
+        <span class="cov8" title="1">webhook.LastHTTPStatus = httpStatus
+        if errorMsg != "" </span><span class="cov8" title="1">{
+                webhook.LastError = errorMsg
+        }</span>
+
+        // Check if webhook was successful
+        <span class="cov8" title="1">if err == nil &amp;&amp; response != nil &amp;&amp; wp.isSuccessfulResponse(response.StatusCode) </span><span class="cov8" title="1">{
+                // Mark as completed with the start time of this successful attempt
+                if err := wp.webhookQueueRepo.MarkCompleted(ctx, webhook.ID, attemptStartTime); err != nil </span><span class="cov8" title="1">{
+                        wp.logger.Log("level", "error", "msg", "failed to mark webhook as completed",
+                                "queue_id", webhook.QueueID, "error", err)
+                        return err
+                }</span>
+
+                <span class="cov8" title="1">wp.logger.Log("level", "info", "msg", "webhook completed successfully",
+                        "queue_id", webhook.QueueID, "status_code", response.StatusCode, "retry_count", webhook.RetryCount)
+
+                return nil</span>
+        }
+
+        // Check if we should retry
+        <span class="cov8" title="1">if webhook.CanRetry() </span><span class="cov8" title="1">{
+                nextRetryAt := wp.calculateNextRetryTime(webhook.RetryCount)
+
+                // Update webhook for next retry - preserve all existing fields
+                webhook.RetryCount = webhook.RetryCount + 1
+                webhook.NextRetryAt = nextRetryAt
+                webhook.Status = enums.WebhookStatusPending
+                webhook.UpdatedAt = time.Now().UTC()
+
+                if err := wp.webhookQueueRepo.Update(ctx, webhook); err != nil </span><span class="cov8" title="1">{
+                        wp.logger.Log("level", "error", "msg", "failed to update webhook for retry",
+                                "queue_id", webhook.QueueID, "error", err)
+                        return err
+                }</span>
+
+                <span class="cov8" title="1">wp.logger.Log("level", "info", "msg", "webhook scheduled for retry",
+                        "queue_id", webhook.QueueID, "retry_count", webhook.RetryCount, "next_retry_at", nextRetryAt)
+
+                return nil</span>
+        }
+
+        // Mark as permanently failed
+        <span class="cov8" title="1">finalErrorMsg := "max retries exceeded"
+        if err != nil </span><span class="cov8" title="1">{
+                finalErrorMsg = fmt.Sprintf("max retries exceeded: %s", err.Error())
+        }</span> else<span class="cov8" title="1"> if response != nil </span><span class="cov8" title="1">{
+                finalErrorMsg = fmt.Sprintf("max retries exceeded: HTTP %d", response.StatusCode)
+        }</span>
+
+        <span class="cov8" title="1">if err := wp.webhookQueueRepo.MarkFailed(ctx, webhook.ID, finalErrorMsg); err != nil </span><span class="cov8" title="1">{
+                wp.logger.Log("level", "error", "msg", "failed to mark webhook as failed",
+                        "queue_id", webhook.QueueID, "error", err)
+                return err
+        }</span>
+
+        <span class="cov8" title="1">wp.logger.Log("level", "error", "msg", "webhook permanently failed",
+                "queue_id", webhook.QueueID, "error", finalErrorMsg)
+
+        return nil</span>
+}
+
+// isSuccessfulResponse checks if the HTTP status code indicates success
+func (wp *WebhookProcessor) isSuccessfulResponse(statusCode int) bool <span class="cov8" title="1">{
+        return statusCode &gt;= 200 &amp;&amp; statusCode &lt; 300
+}</span>
+
+// calculateNextRetryTime calculates the next retry time with simplified progression: 1min, 5min, 10min, 30min
+func (wp *WebhookProcessor) calculateNextRetryTime(retryCount int) time.Time <span class="cov8" title="1">{
+        var baseDelay time.Duration
+
+        // Simplified retry progression aligned with worker polling intervals
+        switch retryCount </span>{
+        case 0:<span class="cov8" title="1"> // Next retry will be level 1
+                baseDelay = 1 * time.Minute</span> // 1 minute delay
+        case 1:<span class="cov8" title="1"> // Next retry will be level 2
+                baseDelay = 5 * time.Minute</span> // 5 minute delay
+        case 2:<span class="cov8" title="1"> // Next retry will be level 3
+                baseDelay = 10 * time.Minute</span> // 10 minute delay
+        case 3:<span class="cov8" title="1"> // Next retry will be level 4
+                baseDelay = 30 * time.Minute</span> // 30 minute delay
+        case 4:<span class="cov8" title="1"> // Next retry will be level 5
+                baseDelay = 60 * time.Minute</span> // 1 hour delay
+        case 5:<span class="cov8" title="1"> // Next retry will be level 6 (final)
+                baseDelay = 120 * time.Minute</span> // 2 hour delay
+        default:<span class="cov8" title="1"> // Fallback for any edge cases
+                baseDelay = 4 * time.Hour</span>
+        }
+
+        // Add random jitter (±25% of the base delay) to prevent thundering herd
+        <span class="cov8" title="1">jitterRange := float64(baseDelay) * 0.25
+        jitter := time.Duration(rand.Float64()*jitterRange*2 - jitterRange)
+
+        finalDelay := baseDelay + jitter
+        if finalDelay &lt; time.Minute </span><span class="cov8" title="1">{
+                finalDelay = time.Minute // Minimum 1 minute delay
+        }</span>
+
+        <span class="cov8" title="1">return time.Now().UTC().Add(finalDelay)</span>
+}
+
+// GetNextWebhookForProcessing atomically gets and locks ONE webhook for a specific retry level
+func (wp *WebhookProcessor) GetNextWebhookForProcessing(ctx context.Context, workerID string, retryLevel int) (*entities.WebhookQueue, error) <span class="cov8" title="1">{
+        return wp.webhookQueueRepo.GetNextWebhookForProcessing(ctx, workerID, retryLevel)
+}</span>
+
+// ResetWebhookToPending resets a webhook back to pending status (for atomic processing)
+func (wp *WebhookProcessor) ResetWebhookToPending(ctx context.Context, webhook *entities.WebhookQueue) error <span class="cov8" title="1">{
+        // Update only the necessary fields while preserving all other data
+        webhook.Status = enums.WebhookStatusPending
+        webhook.UpdatedAt = time.Now().UTC()
+
+        return wp.webhookQueueRepo.Update(ctx, webhook)
+}</span>
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package workers
+
+import (
+        "context"
+        "fmt"
+        "sync"
+        "time"
+
+        "github.com/go-kit/log"
+        "github.com/google/uuid"
+
+        "webhook-processor/internal/application/usecases"
+        "webhook-processor/internal/infrastructure/metrics"
+)
+
+// WebhookWorker represents a specialized webhook processing worker
+type WebhookWorker struct {
+        id           string
+        retryLevel   int
+        processor    *usecases.WebhookProcessor
+        logger       log.Logger
+        pollInterval time.Duration
+        ctx          context.Context
+        cancel       context.CancelFunc
+        wg           sync.WaitGroup
+        running      bool
+        mu           sync.RWMutex
+        metrics      *metrics.WebhookMetrics
+}
+
+// NewWebhookWorker creates a new specialized webhook worker
+func NewWebhookWorker(
+        retryLevel int,
+        processor *usecases.WebhookProcessor,
+        logger log.Logger,
+        pollInterval time.Duration,
+        metrics *metrics.WebhookMetrics,
+) *WebhookWorker <span class="cov0" title="0">{
+        ctx, cancel := context.WithCancel(context.Background())
+
+        return &amp;WebhookWorker{
+                id:           fmt.Sprintf("retry-%d-%s", retryLevel, uuid.New().String()[:8]),
+                retryLevel:   retryLevel,
+                processor:    processor,
+                logger:       logger,
+                pollInterval: pollInterval,
+                ctx:          ctx,
+                cancel:       cancel,
+                metrics:      metrics,
+        }
+}</span>
+
+// Start starts the webhook worker
+func (w *WebhookWorker) Start() error <span class="cov0" title="0">{
+        w.mu.Lock()
+        defer w.mu.Unlock()
+
+        if w.running </span><span class="cov0" title="0">{
+                return fmt.Errorf("worker %s is already running", w.id)
+        }</span>
+
+        <span class="cov0" title="0">w.running = true
+
+        w.logger.Log("level", "info", "msg", "starting worker",
+                "worker_id", w.id, "retry_level", w.retryLevel, "poll_interval", w.pollInterval)
+
+        w.wg.Add(1)
+        go w.processLoop()
+
+        return nil</span>
+}
+
+// Stop stops the webhook worker
+func (w *WebhookWorker) Stop() error <span class="cov0" title="0">{
+        w.mu.Lock()
+        defer w.mu.Unlock()
+
+        if !w.running </span><span class="cov0" title="0">{
+                return fmt.Errorf("worker %s is not running", w.id)
+        }</span>
+
+        <span class="cov0" title="0">w.logger.Log("level", "info", "msg", "stopping worker",
+                "worker_id", w.id, "retry_level", w.retryLevel)
+
+        w.cancel()
+        w.wg.Wait()
+        w.running = false
+
+        w.logger.Log("level", "info", "msg", "worker stopped",
+                "worker_id", w.id, "retry_level", w.retryLevel)
+
+        return nil</span>
+}
+
+// GetID returns the worker ID
+func (w *WebhookWorker) GetID() string <span class="cov0" title="0">{
+        return w.id
+}</span>
+
+// GetRetryLevel returns the retry level this worker handles
+func (w *WebhookWorker) GetRetryLevel() int <span class="cov0" title="0">{
+        return w.retryLevel
+}</span>
+
+// processLoop is the main processing loop - processes ONE webhook at a time
+func (w *WebhookWorker) processLoop() <span class="cov0" title="0">{
+        defer w.wg.Done()
+
+        ticker := time.NewTicker(w.pollInterval)
+        defer ticker.Stop()
+
+        for </span><span class="cov0" title="0">{
+                select </span>{
+                case &lt;-w.ctx.Done():<span class="cov0" title="0">
+                        w.logger.Log("level", "info", "msg", "process loop stopped",
+                                "worker_id", w.id, "retry_level", w.retryLevel)
+                        return</span>
+                case &lt;-ticker.C:<span class="cov0" title="0">
+                        w.processNextWebhook()</span>
+                }
+        }
+}
+
+// processNextWebhook atomically gets and processes the next webhook for this worker's retry level
+func (w *WebhookWorker) processNextWebhook() <span class="cov0" title="0">{
+        // Start measuring complete worker busy time
+        startTime := time.Now().UTC()
+        var finalStatusCode int
+
+        defer func() </span><span class="cov0" title="0">{
+                // Only record metrics if we actually processed a webhook (finalStatusCode != 0)
+                if finalStatusCode != 0 </span><span class="cov0" title="0">{
+                        workerDuration := time.Since(startTime)
+                        w.metrics.RecordWorkerProcessing(finalStatusCode, w.retryLevel, workerDuration)
+                }</span>
+        }()
+
+        // Get webhook specific to this retry level
+        <span class="cov0" title="0">webhook, err := w.processor.GetNextWebhookForProcessing(w.ctx, w.id, w.retryLevel)
+        if err != nil </span><span class="cov0" title="0">{
+                w.logger.Log("level", "error", "msg", "failed to get next webhook",
+                        "worker_id", w.id, "retry_level", w.retryLevel, "error", err)
+                return
+        }</span>
+
+        <span class="cov0" title="0">if webhook == nil </span><span class="cov0" title="0">{
+                // No work available for this retry level - this is normal
+                return
+        }</span>
+
+        // Process the webhook (already locked atomically by SELECT FOR UPDATE)
+        <span class="cov0" title="0">if err := w.processor.ProcessWebhook(w.ctx, webhook, w.id); err != nil </span><span class="cov0" title="0">{
+                w.logger.Log("level", "error", "msg", "failed to process webhook",
+                        "worker_id", w.id, "retry_level", w.retryLevel, "queue_id", webhook.QueueID, "error", err)
+
+                // Reset to pending status on error
+                if resetErr := w.processor.ResetWebhookToPending(w.ctx, webhook); resetErr != nil </span><span class="cov0" title="0">{
+                        w.logger.Log("level", "error", "msg", "failed to reset webhook to pending",
+                                "worker_id", w.id, "retry_level", w.retryLevel, "queue_id", webhook.QueueID, "error", resetErr)
+                }</span>
+
+                // Use the last known status code from the webhook, or 500 for processing errors
+                <span class="cov0" title="0">if webhook.LastHTTPStatus != 0 </span><span class="cov0" title="0">{
+                        finalStatusCode = webhook.LastHTTPStatus
+                }</span> else<span class="cov0" title="0"> {
+                        finalStatusCode = 500 // Processing error
+                }</span>
+        } else<span class="cov0" title="0"> {
+                // Success - use the final status code from the webhook
+                finalStatusCode = webhook.LastHTTPStatus
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package workers
+
+import (
+        "fmt"
+        "sync"
+
+        "github.com/go-kit/log"
+
+        "webhook-processor/internal/application/usecases"
+        "webhook-processor/internal/config"
+        "webhook-processor/internal/infrastructure/metrics"
+)
+
+// WorkerPool manages a pool of specialized webhook workers
+type WorkerPool struct {
+        workers   []*WebhookWorker
+        processor *usecases.WebhookProcessor
+        logger    log.Logger
+        config    config.WorkerPoolConfig
+        running   bool
+        mu        sync.RWMutex
+        metrics   *metrics.WebhookMetrics
+}
+
+// NewWorkerPool creates a new worker pool
+func NewWorkerPool(
+        processor *usecases.WebhookProcessor,
+        logger log.Logger,
+        config config.WorkerPoolConfig,
+        metrics *metrics.WebhookMetrics,
+) *WorkerPool <span class="cov0" title="0">{
+        return &amp;WorkerPool{
+                processor: processor,
+                logger:    logger,
+                config:    config,
+                workers:   make([]*WebhookWorker, 0, len(config.Workers)),
+                metrics:   metrics,
+        }
+}</span>
+
+// Start starts all workers in the pool
+func (wp *WorkerPool) Start() error <span class="cov0" title="0">{
+        wp.mu.Lock()
+        defer wp.mu.Unlock()
+
+        if wp.running </span><span class="cov0" title="0">{
+                return fmt.Errorf("worker pool is already running")
+        }</span>
+
+        <span class="cov0" title="0">wp.logger.Log("level", "info", "msg", "starting worker pool",
+                "worker_count", len(wp.config.Workers))
+
+        // Create and start workers for each retry level
+        for _, workerConfig := range wp.config.Workers </span><span class="cov0" title="0">{
+                worker := NewWebhookWorker(
+                        workerConfig.RetryLevel,
+                        wp.processor,
+                        wp.logger,
+                        workerConfig.PollInterval,
+                        wp.metrics,
+                )
+
+                if err := worker.Start(); err != nil </span><span class="cov0" title="0">{
+                        // Stop any workers that were already started
+                        wp.stopWorkers()
+                        return fmt.Errorf("failed to start worker for level %d: %w",
+                                workerConfig.RetryLevel, err)
+                }</span>
+
+                <span class="cov0" title="0">wp.workers = append(wp.workers, worker)
+
+                wp.logger.Log("level", "info", "msg", "worker started",
+                        "retry_level", workerConfig.RetryLevel,
+                        "poll_interval", workerConfig.PollInterval,
+                        "description", workerConfig.Description)</span>
+        }
+
+        <span class="cov0" title="0">wp.running = true
+        wp.logger.Log("level", "info", "msg", "worker pool started successfully",
+                "total_workers", len(wp.workers))
+
+        return nil</span>
+}
+
+// Stop stops all workers in the pool
+func (wp *WorkerPool) Stop() error <span class="cov0" title="0">{
+        wp.mu.Lock()
+        defer wp.mu.Unlock()
+
+        if !wp.running </span><span class="cov0" title="0">{
+                return fmt.Errorf("worker pool is not running")
+        }</span>
+
+        <span class="cov0" title="0">wp.logger.Log("level", "info", "msg", "stopping worker pool")
+
+        wp.stopWorkers()
+        wp.running = false
+
+        wp.logger.Log("level", "info", "msg", "worker pool stopped")
+
+        return nil</span>
+}
+
+// stopWorkers stops all workers
+func (wp *WorkerPool) stopWorkers() <span class="cov0" title="0">{
+        var wg sync.WaitGroup
+
+        for _, worker := range wp.workers </span><span class="cov0" title="0">{
+                wg.Add(1)
+                go func(w *WebhookWorker) </span><span class="cov0" title="0">{
+                        defer wg.Done()
+                        if err := w.Stop(); err != nil </span><span class="cov0" title="0">{
+                                wp.logger.Log("level", "error", "msg", "failed to stop worker",
+                                        "worker_id", w.GetID(), "retry_level", w.GetRetryLevel(), "error", err)
+                        }</span>
+                }(worker)
+        }
+
+        <span class="cov0" title="0">wg.Wait()
+        wp.workers = wp.workers[:0]</span> // Clear the slice
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package config
+
+import (
+        "fmt"
+        "os"
+        "strconv"
+        "time"
+
+        "github.com/joho/godotenv"
+)
+
+// Config holds all configuration for the webhook processor
+type Config struct {
+        Database   DatabaseConfig   `json:"database"`
+        HTTPClient HTTPClientConfig `json:"http_client"`
+        HTTPServer HTTPServerConfig `json:"http_server"`
+}
+
+// DatabaseConfig holds database configuration
+type DatabaseConfig struct {
+        Host            string        `json:"host"`
+        Port            int           `json:"port"`
+        User            string        `json:"user"`
+        Password        string        `json:"password"`
+        DBName          string        `json:"db_name"`
+        SSLMode         string        `json:"ssl_mode"`
+        MaxOpenConns    int           `json:"max_open_conns"`
+        MaxIdleConns    int           `json:"max_idle_conns"`
+        ConnMaxLifetime time.Duration `json:"conn_max_lifetime"`
+}
+
+// WorkerConfig holds configuration for a specific retry level worker
+type WorkerConfig struct {
+        RetryLevel   int           `json:"retry_level"`
+        PollInterval time.Duration `json:"poll_interval"`
+        Description  string        `json:"description"`
+}
+
+// WorkerPoolConfig holds configuration for the worker pool
+type WorkerPoolConfig struct {
+        Workers []WorkerConfig `json:"workers"`
+}
+
+// HTTPClientConfig holds HTTP client configuration for external webhook requests
+type HTTPClientConfig struct {
+        Timeout         time.Duration `json:"timeout"`
+        MaxIdleConns    int           `json:"max_idle_conns"`
+        IdleConnTimeout time.Duration `json:"idle_conn_timeout"`
+}
+
+// HTTPServerConfig holds HTTP server configuration for our API server
+type HTTPServerConfig struct {
+        Port         int           `json:"port"`
+        ReadTimeout  time.Duration `json:"read_timeout"`
+        WriteTimeout time.Duration `json:"write_timeout"`
+        IdleTimeout  time.Duration `json:"idle_timeout"`
+}
+
+// LoadConfig loads configuration from environment variables
+func LoadConfig() (*Config, error) <span class="cov0" title="0">{
+        _ = godotenv.Load()
+        config := &amp;Config{
+                Database: DatabaseConfig{
+                        Host:            getEnv("DB_HOST", "localhost"),
+                        Port:            getEnvAsInt("DB_PORT", 5432),
+                        User:            getEnv("DB_USER", "postgres"),
+                        Password:        getEnv("DB_PASSWORD", "root"),
+                        DBName:          getEnv("DB_NAME", "webhook_processor"),
+                        SSLMode:         getEnv("DB_SSL_MODE", "disable"),
+                        MaxOpenConns:    getEnvAsInt("DB_MAX_OPEN_CONNS", 25),
+                        MaxIdleConns:    getEnvAsInt("DB_MAX_IDLE_CONNS", 5),
+                        ConnMaxLifetime: getEnvAsDuration("DB_CONN_MAX_LIFETIME", 5*time.Minute),
+                },
+                HTTPClient: HTTPClientConfig{
+                        Timeout:         getEnvAsDuration("HTTP_CLIENT_TIMEOUT", 30*time.Second),
+                        MaxIdleConns:    getEnvAsInt("HTTP_CLIENT_MAX_IDLE_CONNS", 100),
+                        IdleConnTimeout: getEnvAsDuration("HTTP_CLIENT_IDLE_CONN_TIMEOUT", 90*time.Second),
+                },
+                HTTPServer: HTTPServerConfig{
+                        Port:         getEnvAsInt("API_PORT", 8080),
+                        ReadTimeout:  getEnvAsDuration("HTTP_SERVER_READ_TIMEOUT", 30*time.Second),
+                        WriteTimeout: getEnvAsDuration("HTTP_SERVER_WRITE_TIMEOUT", 30*time.Second),
+                        IdleTimeout:  getEnvAsDuration("HTTP_SERVER_IDLE_TIMEOUT", 120*time.Second),
+                },
+        }
+
+        if err := config.Validate(); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("invalid configuration: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return config, nil</span>
+}
+
+// Validate validates the configuration
+func (c *Config) Validate() error <span class="cov0" title="0">{
+        if c.Database.Host == "" </span><span class="cov0" title="0">{
+                return fmt.Errorf("database host is required")
+        }</span>
+        <span class="cov0" title="0">if c.Database.User == "" </span><span class="cov0" title="0">{
+                return fmt.Errorf("database user is required")
+        }</span>
+        <span class="cov0" title="0">if c.Database.DBName == "" </span><span class="cov0" title="0">{
+                return fmt.Errorf("database name is required")
+        }</span>
+        <span class="cov0" title="0">if c.HTTPClient.Timeout &lt;= 0 </span><span class="cov0" title="0">{
+                return fmt.Errorf("HTTP client timeout must be positive")
+        }</span>
+        <span class="cov0" title="0">if c.HTTPServer.Port &lt;= 0 || c.HTTPServer.Port &gt; 65535 </span><span class="cov0" title="0">{
+                return fmt.Errorf("HTTP server port must be between 1 and 65535")
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+// GetDatabaseDSN returns the database connection string
+func (c *Config) GetDatabaseDSN() string <span class="cov0" title="0">{
+        return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s timezone=UTC",
+                c.Database.Host,
+                c.Database.Port,
+                c.Database.User,
+                c.Database.Password,
+                c.Database.DBName,
+                c.Database.SSLMode,
+        )
+}</span>
+
+// Helper functions for environment variable parsing
+
+func getEnv(key, defaultValue string) string <span class="cov0" title="0">{
+        if value := os.Getenv(key); value != "" </span><span class="cov0" title="0">{
+                return value
+        }</span>
+        <span class="cov0" title="0">return defaultValue</span>
+}
+
+func getEnvAsInt(key string, defaultValue int) int <span class="cov0" title="0">{
+        if value := os.Getenv(key); value != "" </span><span class="cov0" title="0">{
+                if intValue, err := strconv.Atoi(value); err == nil </span><span class="cov0" title="0">{
+                        return intValue
+                }</span>
+        }
+        <span class="cov0" title="0">return defaultValue</span>
+}
+
+func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration <span class="cov0" title="0">{
+        if value := os.Getenv(key); value != "" </span><span class="cov0" title="0">{
+                if duration, err := time.ParseDuration(value); err == nil </span><span class="cov0" title="0">{
+                        return duration
+                }</span>
+        }
+        <span class="cov0" title="0">return defaultValue</span>
+}
+
+// GetDefaultWorkerPoolConfig returns the default configuration with 3 level-0 workers and other retry levels
+func GetDefaultWorkerPoolConfig() WorkerPoolConfig <span class="cov0" title="0">{
+        return WorkerPoolConfig{
+                Workers: []WorkerConfig{
+                        // 3 dedicated workers for level 0 (immediate processing)
+                        // These workers will compete for level 0 webhooks using SELECT FOR UPDATE SKIP LOCKED
+                        {
+                                RetryLevel:   0,
+                                PollInterval: 5 * time.Second,
+                                Description:  "Level 0 Worker #1 - Immediate webhook attempts",
+                        },
+                        {
+                                RetryLevel:   0,
+                                PollInterval: 5 * time.Second,
+                                Description:  "Level 0 Worker #2 - Immediate webhook attempts",
+                        },
+                        {
+                                RetryLevel:   0,
+                                PollInterval: 5 * time.Second,
+                                Description:  "Level 0 Worker #3 - Immediate webhook attempts",
+                        },
+                        // Single workers for higher retry levels (less frequent polling)
+                        {
+                                RetryLevel:   1,
+                                PollInterval: 30 * time.Second, // 1st retry - after 1 minute
+                                Description:  "Level 1 Worker - First retry attempts (1 min delay)",
+                        },
+                        {
+                                RetryLevel:   2,
+                                PollInterval: 2 * time.Minute, // 2nd retry - after 5 minutes
+                                Description:  "Level 2 Worker - Second retry attempts (5 min delay)",
+                        },
+                        {
+                                RetryLevel:   3,
+                                PollInterval: 5 * time.Minute, // 3rd retry - after 10 minutes
+                                Description:  "Level 3 Worker - Third retry attempts (10 min delay)",
+                        },
+                        {
+                                RetryLevel:   4,
+                                PollInterval: 15 * time.Minute, // 4th retry - after 30 minutes
+                                Description:  "Level 4 Worker - Fourth retry attempts (30 min delay)",
+                        },
+                        {
+                                RetryLevel:   5,
+                                PollInterval: 30 * time.Minute, // 5th retry - after 1 hour
+                                Description:  "Level 5 Worker - Fifth retry attempts (1 hour delay)",
+                        },
+                        {
+                                RetryLevel:   6,
+                                PollInterval: 60 * time.Minute, // 6th retry - after 2 hours
+                                Description:  "Level 6 Worker - Final retry attempts (2 hour delay)",
+                        },
+                },
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package entities
+
+import (
+        "time"
+
+        "webhook-processor/internal/domain/enums"
+
+        "github.com/google/uuid"
+)
+
+// WebhookQueue represents a webhook processing queue entry
+type WebhookQueue struct {
+        ID      int64     `json:"id"`
+        QueueID uuid.UUID `json:"queue_id"`
+
+        // Event information
+        EventType enums.EventType `json:"event_type"` // EventTypeCredit or EventTypeDebit
+        EventID   string          `json:"event_id"`   // Original transaction/event ID
+
+        // Webhook details
+        ConfigID   int64  `json:"config_id"`
+        WebhookURL string `json:"webhook_url"`
+
+        // Processing status
+        Status enums.WebhookStatus `json:"status"` // WebhookStatusPending, WebhookStatusProcessing, etc.
+
+        // Retry tracking
+        RetryCount  int       `json:"retry_count"`
+        NextRetryAt time.Time `json:"next_retry_at"`
+
+        // Individual retry attempt tracking (retry_0 through retry_6)
+        Retry0StartedAt    *time.Time `json:"retry_0_started_at,omitempty"`
+        Retry0CompletedAt  *time.Time `json:"retry_0_completed_at,omitempty"`
+        Retry0DurationMs   *int64     `json:"retry_0_duration_ms,omitempty"`
+        Retry0HTTPStatus   *int       `json:"retry_0_http_status,omitempty"`
+        Retry0ResponseBody *string    `json:"retry_0_response_body,omitempty"`
+        Retry0Error        *string    `json:"retry_0_error,omitempty"`
+
+        Retry1StartedAt    *time.Time `json:"retry_1_started_at,omitempty"`
+        Retry1CompletedAt  *time.Time `json:"retry_1_completed_at,omitempty"`
+        Retry1DurationMs   *int64     `json:"retry_1_duration_ms,omitempty"`
+        Retry1HTTPStatus   *int       `json:"retry_1_http_status,omitempty"`
+        Retry1ResponseBody *string    `json:"retry_1_response_body,omitempty"`
+        Retry1Error        *string    `json:"retry_1_error,omitempty"`
+
+        Retry2StartedAt    *time.Time `json:"retry_2_started_at,omitempty"`
+        Retry2CompletedAt  *time.Time `json:"retry_2_completed_at,omitempty"`
+        Retry2DurationMs   *int64     `json:"retry_2_duration_ms,omitempty"`
+        Retry2HTTPStatus   *int       `json:"retry_2_http_status,omitempty"`
+        Retry2ResponseBody *string    `json:"retry_2_response_body,omitempty"`
+        Retry2Error        *string    `json:"retry_2_error,omitempty"`
+
+        Retry3StartedAt    *time.Time `json:"retry_3_started_at,omitempty"`
+        Retry3CompletedAt  *time.Time `json:"retry_3_completed_at,omitempty"`
+        Retry3DurationMs   *int64     `json:"retry_3_duration_ms,omitempty"`
+        Retry3HTTPStatus   *int       `json:"retry_3_http_status,omitempty"`
+        Retry3ResponseBody *string    `json:"retry_3_response_body,omitempty"`
+        Retry3Error        *string    `json:"retry_3_error,omitempty"`
+
+        Retry4StartedAt    *time.Time `json:"retry_4_started_at,omitempty"`
+        Retry4CompletedAt  *time.Time `json:"retry_4_completed_at,omitempty"`
+        Retry4DurationMs   *int64     `json:"retry_4_duration_ms,omitempty"`
+        Retry4HTTPStatus   *int       `json:"retry_4_http_status,omitempty"`
+        Retry4ResponseBody *string    `json:"retry_4_response_body,omitempty"`
+        Retry4Error        *string    `json:"retry_4_error,omitempty"`
+
+        Retry5StartedAt    *time.Time `json:"retry_5_started_at,omitempty"`
+        Retry5CompletedAt  *time.Time `json:"retry_5_completed_at,omitempty"`
+        Retry5DurationMs   *int64     `json:"retry_5_duration_ms,omitempty"`
+        Retry5HTTPStatus   *int       `json:"retry_5_http_status,omitempty"`
+        Retry5ResponseBody *string    `json:"retry_5_response_body,omitempty"`
+        Retry5Error        *string    `json:"retry_5_error,omitempty"`
+
+        Retry6StartedAt    *time.Time `json:"retry_6_started_at,omitempty"`
+        Retry6CompletedAt  *time.Time `json:"retry_6_completed_at,omitempty"`
+        Retry6DurationMs   *int64     `json:"retry_6_duration_ms,omitempty"`
+        Retry6HTTPStatus   *int       `json:"retry_6_http_status,omitempty"`
+        Retry6ResponseBody *string    `json:"retry_6_response_body,omitempty"`
+        Retry6Error        *string    `json:"retry_6_error,omitempty"`
+
+        // General tracking
+        LastError      string `json:"last_error"`
+        LastHTTPStatus int    `json:"last_http_status"`
+
+        // Timestamps
+        CreatedAt           time.Time  `json:"created_at"`
+        UpdatedAt           time.Time  `json:"updated_at"`
+        ProcessingStartedAt *time.Time `json:"processing_started_at"`
+        CompletedAt         *time.Time `json:"completed_at"`
+        DeletedAt           *time.Time `json:"deleted_at"`
+}
+
+// CanRetry checks if the webhook can be retried
+func (w *WebhookQueue) CanRetry() bool <span class="cov8" title="1">{
+        return w.RetryCount &lt; enums.MaxRetryAttempts &amp;&amp; !w.Status.IsCompleted()
+}</span>
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package enums
+
+import (
+        "fmt"
+)
+
+// EventType represents the type of webhook event
+type EventType string
+
+const (
+        // EventTypeCredit represents a credit/postback event
+        EventTypeCredit EventType = "CREDIT"
+
+        // EventTypeDebit represents a debit/chargeback event
+        EventTypeDebit EventType = "DEBIT"
+)
+
+// IsValid checks if the event type is valid
+func (e EventType) IsValid() bool <span class="cov8" title="1">{
+        switch e </span>{
+        case EventTypeCredit, EventTypeDebit:<span class="cov8" title="1">
+                return true</span>
+        default:<span class="cov8" title="1">
+                return false</span>
+        }
+}
+
+// Validate validates the event type and returns an error if invalid
+func (e EventType) Validate() error <span class="cov8" title="1">{
+        if !e.IsValid() </span><span class="cov8" title="1">{
+                return fmt.Errorf("invalid event type: %s (must be one of: %s, %s)",
+                        e, EventTypeCredit, EventTypeDebit)
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package enums
+
+// WebhookStatus represents the processing status of a webhook
+type WebhookStatus string
+
+const (
+        // WebhookStatusPending indicates the webhook is waiting to be processed
+        WebhookStatusPending WebhookStatus = "PENDING"
+
+        // WebhookStatusProcessing indicates the webhook is currently being processed
+        WebhookStatusProcessing WebhookStatus = "PROCESSING"
+
+        // WebhookStatusCompleted indicates the webhook was successfully processed
+        WebhookStatusCompleted WebhookStatus = "COMPLETED"
+
+        // WebhookStatusFailed indicates the webhook failed after all retry attempts
+        WebhookStatusFailed WebhookStatus = "FAILED"
+)
+
+// MaxRetryAttempts defines the maximum number of retry attempts
+// This is fixed by the database schema (retry_0 through retry_6 = 7 total attempts)
+const MaxRetryAttempts = 6
+
+// IsCompleted checks if the status is completed
+func (s WebhookStatus) IsCompleted() bool <span class="cov8" title="1">{
+        return s == WebhookStatusCompleted
+}</span>
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package database
+
+import (
+        "fmt"
+
+        "gorm.io/driver/postgres"
+        "gorm.io/gorm"
+        "gorm.io/gorm/logger"
+
+        "webhook-processor/internal/config"
+)
+
+// NewDatabase creates a new database connection
+func NewDatabase(cfg *config.Config) (*gorm.DB, error) <span class="cov0" title="0">{
+        // Configure GORM logger to show all SQL queries
+        gormLogger := logger.Default.LogMode(logger.Info)
+
+        // Open database connection
+        db, err := gorm.Open(postgres.Open(cfg.GetDatabaseDSN()), &amp;gorm.Config{
+                Logger: gormLogger,
+        })
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to connect to database: %w", err)
+        }</span>
+
+        // Get underlying sql.DB
+        <span class="cov0" title="0">sqlDB, err := db.DB()
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to get underlying sql.DB: %w", err)
+        }</span>
+
+        // Configure connection pool
+        <span class="cov0" title="0">sqlDB.SetMaxOpenConns(cfg.Database.MaxOpenConns)
+        sqlDB.SetMaxIdleConns(cfg.Database.MaxIdleConns)
+        sqlDB.SetConnMaxLifetime(cfg.Database.ConnMaxLifetime)
+
+        // Test connection
+        if err := sqlDB.Ping(); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to ping database: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return db, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">package metrics
+
+import (
+        "strconv"
+        "time"
+
+        "github.com/prometheus/client_golang/prometheus"
+        "github.com/prometheus/client_golang/prometheus/promauto"
+)
+
+// WebhookMetrics holds simplified worker processing metrics
+type WebhookMetrics struct {
+        // Histogram for total worker processing duration by status code and retry level
+        workerProcessingDuration prometheus.HistogramVec
+
+        // Counter for total queue items processed by workers by status code and retry level
+        workerProcessingTotal prometheus.CounterVec
+}
+
+// NewWebhookMetrics creates and registers simplified worker processing metrics
+func NewWebhookMetrics() *WebhookMetrics <span class="cov0" title="0">{
+        return &amp;WebhookMetrics{
+                // Worker processing duration by status code and retry level
+                workerProcessingDuration: *promauto.NewHistogramVec(
+                        prometheus.HistogramOpts{
+                                Name:    "worker_processing_duration_seconds",
+                                Help:    "Total time for worker to process one queue item by status code and retry level",
+                                Buckets: []float64{0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60}, // seconds
+                        },
+                        []string{"status_code", "retry_level"},
+                ),
+
+                // Worker processing count by status code and retry level
+                workerProcessingTotal: *promauto.NewCounterVec(
+                        prometheus.CounterOpts{
+                                Name: "worker_processing_total",
+                                Help: "Total number of queue items processed by workers by status code and retry level",
+                        },
+                        []string{"status_code", "retry_level"},
+                ),
+        }
+}</span>
+
+// RecordWorkerProcessing records worker processing metrics by status code and retry level
+func (m *WebhookMetrics) RecordWorkerProcessing(statusCode int, retryLevel int, duration time.Duration) <span class="cov0" title="0">{
+        statusCodeStr := strconv.Itoa(statusCode)
+        retryLevelStr := strconv.Itoa(retryLevel)
+
+        // Record processing duration by status code and retry level
+        m.workerProcessingDuration.WithLabelValues(statusCodeStr, retryLevelStr).Observe(duration.Seconds())
+
+        // Record processing count by status code and retry level
+        m.workerProcessingTotal.WithLabelValues(statusCodeStr, retryLevelStr).Inc()
+}</span>
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">package models
+
+import (
+        "time"
+
+        "webhook-processor/internal/domain/enums"
+
+        "gorm.io/gorm"
+)
+
+// WebhookConfigModel represents the GORM model for webhook_configs table
+type WebhookConfigModel struct {
+        ID         int64           `gorm:"primaryKey;autoIncrement" json:"id"`
+        Name       string          `gorm:"type:varchar(255);not null" json:"name"`
+        EventType  enums.EventType `gorm:"type:event_type;not null" json:"event_type"`
+        WebhookURL string          `gorm:"type:text;not null" json:"webhook_url"`
+        IsActive   bool            `gorm:"default:true" json:"is_active"`
+        TimeoutMs  int             `gorm:"default:30000" json:"timeout_ms"`
+        CreatedAt  time.Time       `gorm:"default:NOW()" json:"created_at"`
+        UpdatedAt  time.Time       `gorm:"default:NOW()" json:"updated_at"`
+        DeletedAt  *time.Time      `gorm:"index" json:"deleted_at"`
+}
+
+// TableName returns the table name for GORM
+func (WebhookConfigModel) TableName() string <span class="cov0" title="0">{
+        return "webhook_configs"
+}</span>
+
+// BeforeUpdate is a GORM hook that runs before updating a record
+func (w *WebhookConfigModel) BeforeUpdate(tx *gorm.DB) error <span class="cov0" title="0">{
+        w.UpdatedAt = time.Now().UTC()
+        return nil
+}</span>
+</pre>
+		
+		<pre class="file" id="file13" style="display: none">package models
+
+import (
+        "time"
+
+        "webhook-processor/internal/domain/enums"
+
+        "github.com/google/uuid"
+        "gorm.io/gorm"
+)
+
+// WebhookQueueModel represents the GORM model for webhook_queue table
+type WebhookQueueModel struct {
+        ID      int64     `gorm:"primaryKey;autoIncrement" json:"id"`
+        QueueID uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();uniqueIndex" json:"queue_id"`
+
+        // Event information
+        EventType enums.EventType `gorm:"type:event_type;not null" json:"event_type"`
+        EventID   string          `gorm:"type:varchar(255);not null" json:"event_id"`
+
+        // Webhook details
+        ConfigID   int64  `gorm:"not null" json:"config_id"`
+        WebhookURL string `gorm:"type:text;not null" json:"webhook_url"`
+
+        // Processing status
+        Status enums.WebhookStatus `gorm:"type:webhook_status;not null;default:'PENDING'" json:"status"`
+
+        // Retry tracking
+        RetryCount  int       `gorm:"not null;default:0" json:"retry_count"`
+        NextRetryAt time.Time `gorm:"not null;default:NOW()" json:"next_retry_at"`
+
+        // Individual retry attempt columns
+        Retry0StartedAt    *time.Time `gorm:"column:retry_0_started_at" json:"retry_0_started_at"`
+        Retry0CompletedAt  *time.Time `gorm:"column:retry_0_completed_at" json:"retry_0_completed_at"`
+        Retry0DurationMs   *int64     `gorm:"column:retry_0_duration_ms" json:"retry_0_duration_ms"`
+        Retry0HTTPStatus   *int       `gorm:"column:retry_0_http_status" json:"retry_0_http_status"`
+        Retry0ResponseBody *string    `gorm:"column:retry_0_response_body;type:text" json:"retry_0_response_body"`
+        Retry0Error        *string    `gorm:"column:retry_0_error;type:text" json:"retry_0_error"`
+
+        Retry1StartedAt    *time.Time `gorm:"column:retry_1_started_at" json:"retry_1_started_at"`
+        Retry1CompletedAt  *time.Time `gorm:"column:retry_1_completed_at" json:"retry_1_completed_at"`
+        Retry1DurationMs   *int64     `gorm:"column:retry_1_duration_ms" json:"retry_1_duration_ms"`
+        Retry1HTTPStatus   *int       `gorm:"column:retry_1_http_status" json:"retry_1_http_status"`
+        Retry1ResponseBody *string    `gorm:"column:retry_1_response_body;type:text" json:"retry_1_response_body"`
+        Retry1Error        *string    `gorm:"column:retry_1_error;type:text" json:"retry_1_error"`
+
+        Retry2StartedAt    *time.Time `gorm:"column:retry_2_started_at" json:"retry_2_started_at"`
+        Retry2CompletedAt  *time.Time `gorm:"column:retry_2_completed_at" json:"retry_2_completed_at"`
+        Retry2DurationMs   *int64     `gorm:"column:retry_2_duration_ms" json:"retry_2_duration_ms"`
+        Retry2HTTPStatus   *int       `gorm:"column:retry_2_http_status" json:"retry_2_http_status"`
+        Retry2ResponseBody *string    `gorm:"column:retry_2_response_body;type:text" json:"retry_2_response_body"`
+        Retry2Error        *string    `gorm:"column:retry_2_error;type:text" json:"retry_2_error"`
+
+        Retry3StartedAt    *time.Time `gorm:"column:retry_3_started_at" json:"retry_3_started_at"`
+        Retry3CompletedAt  *time.Time `gorm:"column:retry_3_completed_at" json:"retry_3_completed_at"`
+        Retry3DurationMs   *int64     `gorm:"column:retry_3_duration_ms" json:"retry_3_duration_ms"`
+        Retry3HTTPStatus   *int       `gorm:"column:retry_3_http_status" json:"retry_3_http_status"`
+        Retry3ResponseBody *string    `gorm:"column:retry_3_response_body;type:text" json:"retry_3_response_body"`
+        Retry3Error        *string    `gorm:"column:retry_3_error;type:text" json:"retry_3_error"`
+
+        Retry4StartedAt    *time.Time `gorm:"column:retry_4_started_at" json:"retry_4_started_at"`
+        Retry4CompletedAt  *time.Time `gorm:"column:retry_4_completed_at" json:"retry_4_completed_at"`
+        Retry4DurationMs   *int64     `gorm:"column:retry_4_duration_ms" json:"retry_4_duration_ms"`
+        Retry4HTTPStatus   *int       `gorm:"column:retry_4_http_status" json:"retry_4_http_status"`
+        Retry4ResponseBody *string    `gorm:"column:retry_4_response_body;type:text" json:"retry_4_response_body"`
+        Retry4Error        *string    `gorm:"column:retry_4_error;type:text" json:"retry_4_error"`
+
+        Retry5StartedAt    *time.Time `gorm:"column:retry_5_started_at" json:"retry_5_started_at"`
+        Retry5CompletedAt  *time.Time `gorm:"column:retry_5_completed_at" json:"retry_5_completed_at"`
+        Retry5DurationMs   *int64     `gorm:"column:retry_5_duration_ms" json:"retry_5_duration_ms"`
+        Retry5HTTPStatus   *int       `gorm:"column:retry_5_http_status" json:"retry_5_http_status"`
+        Retry5ResponseBody *string    `gorm:"column:retry_5_response_body;type:text" json:"retry_5_response_body"`
+        Retry5Error        *string    `gorm:"column:retry_5_error;type:text" json:"retry_5_error"`
+
+        Retry6StartedAt    *time.Time `gorm:"column:retry_6_started_at" json:"retry_6_started_at"`
+        Retry6CompletedAt  *time.Time `gorm:"column:retry_6_completed_at" json:"retry_6_completed_at"`
+        Retry6DurationMs   *int64     `gorm:"column:retry_6_duration_ms" json:"retry_6_duration_ms"`
+        Retry6HTTPStatus   *int       `gorm:"column:retry_6_http_status" json:"retry_6_http_status"`
+        Retry6ResponseBody *string    `gorm:"column:retry_6_response_body;type:text" json:"retry_6_response_body"`
+        Retry6Error        *string    `gorm:"column:retry_6_error;type:text" json:"retry_6_error"`
+
+        // General tracking
+        LastError      string `gorm:"type:text" json:"last_error"`
+        LastHTTPStatus int    `json:"last_http_status"`
+
+        // Timestamps
+        CreatedAt           time.Time  `gorm:"default:NOW()" json:"created_at"`
+        UpdatedAt           time.Time  `gorm:"default:NOW()" json:"updated_at"`
+        ProcessingStartedAt *time.Time `json:"processing_started_at"`
+        CompletedAt         *time.Time `json:"completed_at"`
+        DeletedAt           *time.Time `gorm:"index" json:"deleted_at"`
+}
+
+// TableName returns the table name for GORM
+func (WebhookQueueModel) TableName() string <span class="cov0" title="0">{
+        return "webhook_queue"
+}</span>
+
+// BeforeCreate is a GORM hook that runs before creating a record
+func (w *WebhookQueueModel) BeforeCreate(tx *gorm.DB) error <span class="cov0" title="0">{
+        if w.QueueID == uuid.Nil </span><span class="cov0" title="0">{
+                w.QueueID = uuid.New()
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+// BeforeUpdate is a GORM hook that runs before updating a record
+func (w *WebhookQueueModel) BeforeUpdate(tx *gorm.DB) error <span class="cov0" title="0">{
+        w.UpdatedAt = time.Now().UTC()
+        return nil
+}</span>
+</pre>
+		
+		<pre class="file" id="file14" style="display: none">package repositories
+
+import (
+        "context"
+        "fmt"
+
+        "gorm.io/gorm"
+
+        "webhook-processor/internal/domain/entities"
+        "webhook-processor/internal/domain/repositories"
+        "webhook-processor/internal/infrastructure/models"
+)
+
+// webhookConfigRepositoryImpl implements the WebhookConfigRepository interface
+type webhookConfigRepositoryImpl struct {
+        db *gorm.DB
+}
+
+// NewWebhookConfigRepository creates a new webhook config repository
+func NewWebhookConfigRepository(db *gorm.DB) (repositories.WebhookConfigRepository, error) <span class="cov8" title="1">{
+        if db == nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("database cannot be nil")
+        }</span>
+        <span class="cov8" title="1">return &amp;webhookConfigRepositoryImpl{db: db}, nil</span>
+}
+
+// GetByID retrieves a webhook config by ID
+func (r *webhookConfigRepositoryImpl) GetByID(ctx context.Context, id int64) (*entities.WebhookConfig, error) <span class="cov0" title="0">{
+        var model models.WebhookConfigModel
+        if err := r.db.WithContext(ctx).First(&amp;model, id).Error; err != nil </span><span class="cov0" title="0">{
+                if err == gorm.ErrRecordNotFound </span><span class="cov0" title="0">{
+                        return nil, nil
+                }</span>
+                <span class="cov0" title="0">return nil, fmt.Errorf("failed to get webhook config by ID: %w", err)</span>
+        }
+        <span class="cov0" title="0">return r.modelToEntity(&amp;model), nil</span>
+}
+
+// modelToEntity converts GORM model to domain entity
+func (r *webhookConfigRepositoryImpl) modelToEntity(model *models.WebhookConfigModel) *entities.WebhookConfig <span class="cov8" title="1">{
+        return &amp;entities.WebhookConfig{
+                ID:         model.ID,
+                Name:       model.Name,
+                EventType:  model.EventType,
+                WebhookURL: model.WebhookURL,
+                IsActive:   model.IsActive,
+                TimeoutMs:  model.TimeoutMs,
+                CreatedAt:  model.CreatedAt,
+                UpdatedAt:  model.UpdatedAt,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file15" style="display: none">package repositories
+
+import (
+        "context"
+        "fmt"
+        "time"
+
+        "github.com/google/uuid"
+        "gorm.io/gorm"
+        "gorm.io/gorm/clause"
+
+        "webhook-processor/internal/domain/entities"
+        "webhook-processor/internal/domain/enums"
+        "webhook-processor/internal/domain/repositories"
+        "webhook-processor/internal/infrastructure/models"
+)
+
+// webhookQueueRepositoryImpl implements the WebhookQueueRepository interface
+type webhookQueueRepositoryImpl struct {
+        db *gorm.DB
+}
+
+// NewWebhookQueueRepository creates a new webhook queue repository
+func NewWebhookQueueRepository(db *gorm.DB) (repositories.WebhookQueueRepository, error) <span class="cov8" title="1">{
+        if db == nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("database cannot be nil")
+        }</span>
+        <span class="cov8" title="1">return &amp;webhookQueueRepositoryImpl{db: db}, nil</span>
+}
+
+// Create creates a new webhook queue entry
+func (r *webhookQueueRepositoryImpl) Create(ctx context.Context, webhook *entities.WebhookQueue) error <span class="cov0" title="0">{
+        model := r.entityToModel(webhook)
+        if err := r.db.WithContext(ctx).Create(model).Error; err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to create webhook queue entry: %w", err)
+        }</span>
+        <span class="cov0" title="0">webhook.ID = model.ID
+        webhook.QueueID = model.QueueID
+        return nil</span>
+}
+
+// Update updates a webhook queue entry with intelligent field merging
+func (r *webhookQueueRepositoryImpl) Update(ctx context.Context, webhook *entities.WebhookQueue) error <span class="cov0" title="0">{
+        var currentModel models.WebhookQueueModel
+        if err := r.db.WithContext(ctx).Where("id = ?", webhook.ID).First(&amp;currentModel).Error; err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to get current webhook state: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">r.mergeWebhookIntoModel(&amp;currentModel, webhook)
+
+        if err := r.db.WithContext(ctx).Save(&amp;currentModel).Error; err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to update webhook queue entry: %w", err)
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+// GetNextWebhookForProcessing atomically gets and locks ONE webhook for a specific retry level
+// Uses PostgreSQL's SELECT FOR UPDATE SKIP LOCKED for optimal concurrency
+func (r *webhookQueueRepositoryImpl) GetNextWebhookForProcessing(ctx context.Context, workerID string, retryLevel int) (*entities.WebhookQueue, error) <span class="cov0" title="0">{
+        var model models.WebhookQueueModel
+
+        // Start transaction for atomic operation
+        tx := r.db.WithContext(ctx).Begin()
+        if tx.Error != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to start transaction: %w", tx.Error)
+        }</span>
+        <span class="cov0" title="0">defer tx.Rollback()
+
+        // Atomically select and lock ONE webhook for the specific retry level using GORM's clause.Locking
+        now := time.Now().UTC()
+
+        err := tx.
+                Where("status = ? AND retry_count = ? AND next_retry_at &lt;= ?",
+                        enums.WebhookStatusPending, retryLevel, now).
+                Clauses(clause.Locking{Strength: "UPDATE", Options: "SKIP LOCKED"}).
+                Order("next_retry_at ASC").
+                First(&amp;model).Error
+
+        if err != nil </span><span class="cov0" title="0">{
+                if err == gorm.ErrRecordNotFound </span><span class="cov0" title="0">{
+                        tx.Commit() // No work available for this retry level
+                        return nil, nil
+                }</span>
+                <span class="cov0" title="0">return nil, fmt.Errorf("failed to get next webhook for retry level %d: %w", retryLevel, err)</span>
+        }
+
+        // Update the selected webhook to PROCESSING status atomically
+        <span class="cov0" title="0">if err := tx.Model(&amp;model).
+                Updates(map[string]interface{}{
+                        "status":     enums.WebhookStatusProcessing,
+                        "updated_at": now,
+                }).Error; err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to update webhook status for retry level %d: %w", retryLevel, err)
+        }</span>
+
+        // Commit transaction
+        <span class="cov0" title="0">if err := tx.Commit().Error; err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to commit transaction for retry level %d: %w", retryLevel, err)
+        }</span>
+
+        // Update model in memory and convert to entity
+        <span class="cov0" title="0">model.Status = enums.WebhookStatusProcessing
+        model.UpdatedAt = now
+
+        return r.modelToEntity(&amp;model), nil</span>
+}
+
+// UpdateRetryAttempt updates retry attempt information
+func (r *webhookQueueRepositoryImpl) UpdateRetryAttempt(ctx context.Context, webhookID int64, retryLevel int, startedAt time.Time, completedAt *time.Time, durationMs int64, httpStatus int, responseBody, errorMsg string) error <span class="cov0" title="0">{
+        updates := map[string]interface{}{
+                "updated_at":       time.Now().UTC(),
+                "last_http_status": httpStatus,
+        }
+
+        if errorMsg != "" </span><span class="cov0" title="0">{
+                updates["last_error"] = errorMsg
+        }</span>
+
+        // Update specific retry attempt columns based on retry level
+        <span class="cov0" title="0">switch retryLevel </span>{
+        case 0:<span class="cov0" title="0">
+                updates["retry_0_started_at"] = startedAt
+                if completedAt != nil </span><span class="cov0" title="0">{
+                        updates["retry_0_completed_at"] = *completedAt
+                }</span>
+                <span class="cov0" title="0">updates["retry_0_duration_ms"] = durationMs
+                updates["retry_0_http_status"] = httpStatus
+                updates["retry_0_response_body"] = responseBody
+                if errorMsg != "" </span><span class="cov0" title="0">{
+                        updates["retry_0_error"] = errorMsg
+                }</span>
+        case 1:<span class="cov0" title="0">
+                updates["retry_1_started_at"] = startedAt
+                if completedAt != nil </span><span class="cov0" title="0">{
+                        updates["retry_1_completed_at"] = *completedAt
+                }</span>
+                <span class="cov0" title="0">updates["retry_1_duration_ms"] = durationMs
+                updates["retry_1_http_status"] = httpStatus
+                updates["retry_1_response_body"] = responseBody
+                if errorMsg != "" </span><span class="cov0" title="0">{
+                        updates["retry_1_error"] = errorMsg
+                }</span>
+        case 2:<span class="cov0" title="0">
+                updates["retry_2_started_at"] = startedAt
+                if completedAt != nil </span><span class="cov0" title="0">{
+                        updates["retry_2_completed_at"] = *completedAt
+                }</span>
+                <span class="cov0" title="0">updates["retry_2_duration_ms"] = durationMs
+                updates["retry_2_http_status"] = httpStatus
+                updates["retry_2_response_body"] = responseBody
+                if errorMsg != "" </span><span class="cov0" title="0">{
+                        updates["retry_2_error"] = errorMsg
+                }</span>
+        case 3:<span class="cov0" title="0">
+                updates["retry_3_started_at"] = startedAt
+                if completedAt != nil </span><span class="cov0" title="0">{
+                        updates["retry_3_completed_at"] = *completedAt
+                }</span>
+                <span class="cov0" title="0">updates["retry_3_duration_ms"] = durationMs
+                updates["retry_3_http_status"] = httpStatus
+                updates["retry_3_response_body"] = responseBody
+                if errorMsg != "" </span><span class="cov0" title="0">{
+                        updates["retry_3_error"] = errorMsg
+                }</span>
+        case 4:<span class="cov0" title="0">
+                updates["retry_4_started_at"] = startedAt
+                if completedAt != nil </span><span class="cov0" title="0">{
+                        updates["retry_4_completed_at"] = *completedAt
+                }</span>
+                <span class="cov0" title="0">updates["retry_4_duration_ms"] = durationMs
+                updates["retry_4_http_status"] = httpStatus
+                updates["retry_4_response_body"] = responseBody
+                if errorMsg != "" </span><span class="cov0" title="0">{
+                        updates["retry_4_error"] = errorMsg
+                }</span>
+        case 5:<span class="cov0" title="0">
+                updates["retry_5_started_at"] = startedAt
+                if completedAt != nil </span><span class="cov0" title="0">{
+                        updates["retry_5_completed_at"] = *completedAt
+                }</span>
+                <span class="cov0" title="0">updates["retry_5_duration_ms"] = durationMs
+                updates["retry_5_http_status"] = httpStatus
+                updates["retry_5_response_body"] = responseBody
+                if errorMsg != "" </span><span class="cov0" title="0">{
+                        updates["retry_5_error"] = errorMsg
+                }</span>
+        case 6:<span class="cov0" title="0">
+                updates["retry_6_started_at"] = startedAt
+                if completedAt != nil </span><span class="cov0" title="0">{
+                        updates["retry_6_completed_at"] = *completedAt
+                }</span>
+                <span class="cov0" title="0">updates["retry_6_duration_ms"] = durationMs
+                updates["retry_6_http_status"] = httpStatus
+                updates["retry_6_response_body"] = responseBody
+                if errorMsg != "" </span><span class="cov0" title="0">{
+                        updates["retry_6_error"] = errorMsg
+                }</span>
+        }
+
+        <span class="cov0" title="0">if err := r.db.WithContext(ctx).
+                Model(&amp;models.WebhookQueueModel{}).
+                Where("id = ?", webhookID).
+                Updates(updates).Error; err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to update retry attempt: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// MarkCompleted marks a webhook as completed
+func (r *webhookQueueRepositoryImpl) MarkCompleted(ctx context.Context, webhookID int64, processingStartedAt time.Time) error <span class="cov0" title="0">{
+        now := time.Now().UTC()
+        if err := r.db.WithContext(ctx).
+                Model(&amp;models.WebhookQueueModel{}).
+                Where("id = ?", webhookID).
+                Updates(map[string]interface{}{
+                        "status":                enums.WebhookStatusCompleted,
+                        "processing_started_at": processingStartedAt,
+                        "completed_at":          now,
+                        "updated_at":            now,
+                }).Error; err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to mark webhook as completed: %w", err)
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+// MarkFailed marks a webhook as failed
+func (r *webhookQueueRepositoryImpl) MarkFailed(ctx context.Context, webhookID int64, errorMsg string) error <span class="cov0" title="0">{
+        now := time.Now().UTC()
+        if err := r.db.WithContext(ctx).
+                Model(&amp;models.WebhookQueueModel{}).
+                Where("id = ?", webhookID).
+                Updates(map[string]interface{}{
+                        "status":     enums.WebhookStatusFailed,
+                        "last_error": errorMsg,
+                        "updated_at": now,
+                }).Error; err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to mark webhook as failed: %w", err)
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+func (r *webhookQueueRepositoryImpl) mergeWebhookIntoModel(model *models.WebhookQueueModel, update *entities.WebhookQueue) <span class="cov8" title="1">{
+        // Core fields - update if non-zero/non-empty in update entity
+        if update.QueueID != uuid.Nil </span><span class="cov8" title="1">{
+                model.QueueID = update.QueueID
+        }</span>
+
+        <span class="cov8" title="1">if update.EventType != "" </span><span class="cov8" title="1">{
+                model.EventType = update.EventType
+        }</span>
+
+        <span class="cov8" title="1">if update.EventID != "" </span><span class="cov8" title="1">{
+                model.EventID = update.EventID
+        }</span>
+
+        <span class="cov8" title="1">if update.ConfigID != 0 </span><span class="cov8" title="1">{
+                model.ConfigID = update.ConfigID
+        }</span>
+
+        <span class="cov8" title="1">if update.WebhookURL != "" </span><span class="cov8" title="1">{
+                model.WebhookURL = update.WebhookURL
+        }</span>
+
+        <span class="cov8" title="1">if update.Status != "" </span><span class="cov8" title="1">{
+                model.Status = update.Status
+        }</span>
+
+        <span class="cov8" title="1">if update.RetryCount != 0 || !update.NextRetryAt.IsZero() </span><span class="cov8" title="1">{
+                model.RetryCount = update.RetryCount
+                model.NextRetryAt = update.NextRetryAt
+        }</span>
+
+        <span class="cov8" title="1">if update.LastError != "" </span><span class="cov8" title="1">{
+                model.LastError = update.LastError
+        }</span>
+
+        <span class="cov8" title="1">if update.LastHTTPStatus != 0 </span><span class="cov8" title="1">{
+                model.LastHTTPStatus = update.LastHTTPStatus
+        }</span>
+
+        // Timestamp fields - update if non-zero in update entity
+        <span class="cov8" title="1">if !update.UpdatedAt.IsZero() </span><span class="cov8" title="1">{
+                model.UpdatedAt = update.UpdatedAt
+        }</span>
+
+        <span class="cov8" title="1">if update.ProcessingStartedAt != nil </span><span class="cov8" title="1">{
+                model.ProcessingStartedAt = update.ProcessingStartedAt
+        }</span>
+
+        <span class="cov8" title="1">if update.CompletedAt != nil </span><span class="cov8" title="1">{
+                model.CompletedAt = update.CompletedAt
+        }</span>
+
+        <span class="cov8" title="1">if update.DeletedAt != nil </span><span class="cov8" title="1">{
+                model.DeletedAt = update.DeletedAt
+        }</span>
+
+}
+
+// entityToModel converts domain entity to GORM model
+// Now simple since structures match!
+func (r *webhookQueueRepositoryImpl) entityToModel(webhook *entities.WebhookQueue) *models.WebhookQueueModel <span class="cov8" title="1">{
+        return &amp;models.WebhookQueueModel{
+                ID:                  webhook.ID,
+                QueueID:             webhook.QueueID,
+                EventType:           webhook.EventType,
+                EventID:             webhook.EventID,
+                ConfigID:            webhook.ConfigID,
+                WebhookURL:          webhook.WebhookURL,
+                Status:              webhook.Status,
+                RetryCount:          webhook.RetryCount,
+                NextRetryAt:         webhook.NextRetryAt,
+                LastError:           webhook.LastError,
+                LastHTTPStatus:      webhook.LastHTTPStatus,
+                CreatedAt:           webhook.CreatedAt,
+                UpdatedAt:           webhook.UpdatedAt,
+                ProcessingStartedAt: webhook.ProcessingStartedAt,
+                CompletedAt:         webhook.CompletedAt,
+                DeletedAt:           webhook.DeletedAt,
+
+                // Direct mapping of retry attempt fields
+                Retry0StartedAt:    webhook.Retry0StartedAt,
+                Retry0CompletedAt:  webhook.Retry0CompletedAt,
+                Retry0DurationMs:   webhook.Retry0DurationMs,
+                Retry0HTTPStatus:   webhook.Retry0HTTPStatus,
+                Retry0ResponseBody: webhook.Retry0ResponseBody,
+                Retry0Error:        webhook.Retry0Error,
+
+                Retry1StartedAt:    webhook.Retry1StartedAt,
+                Retry1CompletedAt:  webhook.Retry1CompletedAt,
+                Retry1DurationMs:   webhook.Retry1DurationMs,
+                Retry1HTTPStatus:   webhook.Retry1HTTPStatus,
+                Retry1ResponseBody: webhook.Retry1ResponseBody,
+                Retry1Error:        webhook.Retry1Error,
+
+                Retry2StartedAt:    webhook.Retry2StartedAt,
+                Retry2CompletedAt:  webhook.Retry2CompletedAt,
+                Retry2DurationMs:   webhook.Retry2DurationMs,
+                Retry2HTTPStatus:   webhook.Retry2HTTPStatus,
+                Retry2ResponseBody: webhook.Retry2ResponseBody,
+                Retry2Error:        webhook.Retry2Error,
+
+                Retry3StartedAt:    webhook.Retry3StartedAt,
+                Retry3CompletedAt:  webhook.Retry3CompletedAt,
+                Retry3DurationMs:   webhook.Retry3DurationMs,
+                Retry3HTTPStatus:   webhook.Retry3HTTPStatus,
+                Retry3ResponseBody: webhook.Retry3ResponseBody,
+                Retry3Error:        webhook.Retry3Error,
+
+                Retry4StartedAt:    webhook.Retry4StartedAt,
+                Retry4CompletedAt:  webhook.Retry4CompletedAt,
+                Retry4DurationMs:   webhook.Retry4DurationMs,
+                Retry4HTTPStatus:   webhook.Retry4HTTPStatus,
+                Retry4ResponseBody: webhook.Retry4ResponseBody,
+                Retry4Error:        webhook.Retry4Error,
+
+                Retry5StartedAt:    webhook.Retry5StartedAt,
+                Retry5CompletedAt:  webhook.Retry5CompletedAt,
+                Retry5DurationMs:   webhook.Retry5DurationMs,
+                Retry5HTTPStatus:   webhook.Retry5HTTPStatus,
+                Retry5ResponseBody: webhook.Retry5ResponseBody,
+                Retry5Error:        webhook.Retry5Error,
+
+                Retry6StartedAt:    webhook.Retry6StartedAt,
+                Retry6CompletedAt:  webhook.Retry6CompletedAt,
+                Retry6DurationMs:   webhook.Retry6DurationMs,
+                Retry6HTTPStatus:   webhook.Retry6HTTPStatus,
+                Retry6ResponseBody: webhook.Retry6ResponseBody,
+                Retry6Error:        webhook.Retry6Error,
+        }
+}</span>
+
+// modelToEntity converts GORM model to domain entity
+// Now simple since structures match!
+func (r *webhookQueueRepositoryImpl) modelToEntity(model *models.WebhookQueueModel) *entities.WebhookQueue <span class="cov8" title="1">{
+        return &amp;entities.WebhookQueue{
+                ID:                  model.ID,
+                QueueID:             model.QueueID,
+                EventType:           model.EventType,
+                EventID:             model.EventID,
+                ConfigID:            model.ConfigID,
+                WebhookURL:          model.WebhookURL,
+                Status:              model.Status,
+                RetryCount:          model.RetryCount,
+                NextRetryAt:         model.NextRetryAt,
+                LastError:           model.LastError,
+                LastHTTPStatus:      model.LastHTTPStatus,
+                CreatedAt:           model.CreatedAt,
+                UpdatedAt:           model.UpdatedAt,
+                ProcessingStartedAt: model.ProcessingStartedAt,
+                CompletedAt:         model.CompletedAt,
+                DeletedAt:           model.DeletedAt,
+
+                // Direct mapping of retry attempt fields
+                Retry0StartedAt:    model.Retry0StartedAt,
+                Retry0CompletedAt:  model.Retry0CompletedAt,
+                Retry0DurationMs:   model.Retry0DurationMs,
+                Retry0HTTPStatus:   model.Retry0HTTPStatus,
+                Retry0ResponseBody: model.Retry0ResponseBody,
+                Retry0Error:        model.Retry0Error,
+
+                Retry1StartedAt:    model.Retry1StartedAt,
+                Retry1CompletedAt:  model.Retry1CompletedAt,
+                Retry1DurationMs:   model.Retry1DurationMs,
+                Retry1HTTPStatus:   model.Retry1HTTPStatus,
+                Retry1ResponseBody: model.Retry1ResponseBody,
+                Retry1Error:        model.Retry1Error,
+
+                Retry2StartedAt:    model.Retry2StartedAt,
+                Retry2CompletedAt:  model.Retry2CompletedAt,
+                Retry2DurationMs:   model.Retry2DurationMs,
+                Retry2HTTPStatus:   model.Retry2HTTPStatus,
+                Retry2ResponseBody: model.Retry2ResponseBody,
+                Retry2Error:        model.Retry2Error,
+
+                Retry3StartedAt:    model.Retry3StartedAt,
+                Retry3CompletedAt:  model.Retry3CompletedAt,
+                Retry3DurationMs:   model.Retry3DurationMs,
+                Retry3HTTPStatus:   model.Retry3HTTPStatus,
+                Retry3ResponseBody: model.Retry3ResponseBody,
+                Retry3Error:        model.Retry3Error,
+
+                Retry4StartedAt:    model.Retry4StartedAt,
+                Retry4CompletedAt:  model.Retry4CompletedAt,
+                Retry4DurationMs:   model.Retry4DurationMs,
+                Retry4HTTPStatus:   model.Retry4HTTPStatus,
+                Retry4ResponseBody: model.Retry4ResponseBody,
+                Retry4Error:        model.Retry4Error,
+
+                Retry5StartedAt:    model.Retry5StartedAt,
+                Retry5CompletedAt:  model.Retry5CompletedAt,
+                Retry5DurationMs:   model.Retry5DurationMs,
+                Retry5HTTPStatus:   model.Retry5HTTPStatus,
+                Retry5ResponseBody: model.Retry5ResponseBody,
+                Retry5Error:        model.Retry5Error,
+
+                Retry6StartedAt:    model.Retry6StartedAt,
+                Retry6CompletedAt:  model.Retry6CompletedAt,
+                Retry6DurationMs:   model.Retry6DurationMs,
+                Retry6HTTPStatus:   model.Retry6HTTPStatus,
+                Retry6ResponseBody: model.Retry6ResponseBody,
+                Retry6Error:        model.Retry6Error,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file16" style="display: none">package services
+
+import (
+        "context"
+        "fmt"
+        "io"
+        "net/http"
+        "time"
+
+        "webhook-processor/internal/config"
+        "webhook-processor/internal/domain/entities"
+        "webhook-processor/internal/domain/services"
+)
+
+// webhookServiceImpl implements the WebhookService interface
+type webhookServiceImpl struct {
+        httpClient *http.Client
+}
+
+// NewWebhookService creates a new webhook service
+func NewWebhookService(clientConfig config.HTTPClientConfig) services.WebhookService <span class="cov8" title="1">{
+        return &amp;webhookServiceImpl{
+                httpClient: &amp;http.Client{
+                        Timeout: clientConfig.Timeout,
+                        Transport: &amp;http.Transport{
+                                MaxIdleConns:    clientConfig.MaxIdleConns,
+                                IdleConnTimeout: clientConfig.IdleConnTimeout,
+                        },
+                },
+        }
+}</span>
+
+// SendWebhook sends a webhook request and returns the response
+func (s *webhookServiceImpl) SendWebhook(ctx context.Context, webhook *entities.WebhookQueue) (*services.WebhookResponse, error) <span class="cov8" title="1">{
+        startTime := time.Now().UTC()
+
+        // Use the complete webhook URL directly
+        fullURL := webhook.WebhookURL
+
+        // Create HTTP request
+        req, err := http.NewRequestWithContext(ctx, "GET", fullURL, nil)
+        if err != nil </span><span class="cov8" title="1">{
+                return &amp;services.WebhookResponse{
+                        Error:    err,
+                        Duration: time.Since(startTime),
+                }, fmt.Errorf("failed to create HTTP request: %w", err)
+        }</span>
+
+        // Set headers
+        <span class="cov8" title="1">req.Header.Set("User-Agent", "Webhook-Processor/1.0")
+        req.Header.Set("Accept", "application/json")
+
+        // Send the request
+        resp, err := s.httpClient.Do(req)
+        duration := time.Since(startTime)
+
+        if err != nil </span><span class="cov8" title="1">{
+                return &amp;services.WebhookResponse{
+                        Error:    err,
+                        Duration: duration,
+                }, fmt.Errorf("failed to send webhook request: %w", err)
+        }</span>
+        <span class="cov8" title="1">defer resp.Body.Close()
+
+        // Read response body
+        body, err := io.ReadAll(resp.Body)
+        if err != nil </span><span class="cov8" title="1">{
+                return &amp;services.WebhookResponse{
+                        StatusCode: resp.StatusCode,
+                        Error:      err,
+                        Duration:   duration,
+                }, fmt.Errorf("failed to read response body: %w", err)
+        }</span>
+
+        <span class="cov8" title="1">return &amp;services.WebhookResponse{
+                StatusCode: resp.StatusCode,
+                Body:       string(body),
+                Duration:   duration,
+        }, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file17" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: internal\domain\repositories\webhook_config_repository.go
+//
+// Generated by this command:
+//
+//        mockgen -source internal\domain\repositories\webhook_config_repository.go -destination internal\mocks\mock_webhook_config_repository.go -package mocks
+//
+
+// Package mocks is a generated GoMock package.
+package mocks
+
+import (
+        context "context"
+        reflect "reflect"
+        entities "webhook-processor/internal/domain/entities"
+
+        gomock "go.uber.org/mock/gomock"
+)
+
+// MockWebhookConfigRepository is a mock of WebhookConfigRepository interface.
+type MockWebhookConfigRepository struct {
+        ctrl     *gomock.Controller
+        recorder *MockWebhookConfigRepositoryMockRecorder
+        isgomock struct{}
+}
+
+// MockWebhookConfigRepositoryMockRecorder is the mock recorder for MockWebhookConfigRepository.
+type MockWebhookConfigRepositoryMockRecorder struct {
+        mock *MockWebhookConfigRepository
+}
+
+// NewMockWebhookConfigRepository creates a new mock instance.
+func NewMockWebhookConfigRepository(ctrl *gomock.Controller) *MockWebhookConfigRepository <span class="cov0" title="0">{
+        mock := &amp;MockWebhookConfigRepository{ctrl: ctrl}
+        mock.recorder = &amp;MockWebhookConfigRepositoryMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockWebhookConfigRepository) EXPECT() *MockWebhookConfigRepositoryMockRecorder <span class="cov0" title="0">{
+        return m.recorder
+}</span>
+
+// GetByID mocks base method.
+func (m *MockWebhookConfigRepository) GetByID(ctx context.Context, id int64) (*entities.WebhookConfig, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetByID", ctx, id)
+        ret0, _ := ret[0].(*entities.WebhookConfig)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GetByID indicates an expected call of GetByID.
+func (mr *MockWebhookConfigRepositoryMockRecorder) GetByID(ctx, id any) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockWebhookConfigRepository)(nil).GetByID), ctx, id)
+}</span>
+</pre>
+		
+		<pre class="file" id="file18" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: internal\domain\repositories\webhook_queue_repository.go
+//
+// Generated by this command:
+//
+//        mockgen -source internal\domain\repositories\webhook_queue_repository.go -destination internal\mocks\mock_webhook_queue_repository.go -package mocks
+//
+
+// Package mocks is a generated GoMock package.
+package mocks
+
+import (
+        context "context"
+        reflect "reflect"
+        time "time"
+        entities "webhook-processor/internal/domain/entities"
+
+        gomock "go.uber.org/mock/gomock"
+)
+
+// MockWebhookQueueRepository is a mock of WebhookQueueRepository interface.
+type MockWebhookQueueRepository struct {
+        ctrl     *gomock.Controller
+        recorder *MockWebhookQueueRepositoryMockRecorder
+        isgomock struct{}
+}
+
+// MockWebhookQueueRepositoryMockRecorder is the mock recorder for MockWebhookQueueRepository.
+type MockWebhookQueueRepositoryMockRecorder struct {
+        mock *MockWebhookQueueRepository
+}
+
+// NewMockWebhookQueueRepository creates a new mock instance.
+func NewMockWebhookQueueRepository(ctrl *gomock.Controller) *MockWebhookQueueRepository <span class="cov0" title="0">{
+        mock := &amp;MockWebhookQueueRepository{ctrl: ctrl}
+        mock.recorder = &amp;MockWebhookQueueRepositoryMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockWebhookQueueRepository) EXPECT() *MockWebhookQueueRepositoryMockRecorder <span class="cov0" title="0">{
+        return m.recorder
+}</span>
+
+// Create mocks base method.
+func (m *MockWebhookQueueRepository) Create(ctx context.Context, webhook *entities.WebhookQueue) error <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "Create", ctx, webhook)
+        ret0, _ := ret[0].(error)
+        return ret0
+}</span>
+
+// Create indicates an expected call of Create.
+func (mr *MockWebhookQueueRepositoryMockRecorder) Create(ctx, webhook any) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockWebhookQueueRepository)(nil).Create), ctx, webhook)
+}</span>
+
+// GetNextWebhookForProcessing mocks base method.
+func (m *MockWebhookQueueRepository) GetNextWebhookForProcessing(ctx context.Context, workerID string, retryLevel int) (*entities.WebhookQueue, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "GetNextWebhookForProcessing", ctx, workerID, retryLevel)
+        ret0, _ := ret[0].(*entities.WebhookQueue)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// GetNextWebhookForProcessing indicates an expected call of GetNextWebhookForProcessing.
+func (mr *MockWebhookQueueRepositoryMockRecorder) GetNextWebhookForProcessing(ctx, workerID, retryLevel any) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNextWebhookForProcessing", reflect.TypeOf((*MockWebhookQueueRepository)(nil).GetNextWebhookForProcessing), ctx, workerID, retryLevel)
+}</span>
+
+// MarkCompleted mocks base method.
+func (m *MockWebhookQueueRepository) MarkCompleted(ctx context.Context, webhookID int64, processingStartedAt time.Time) error <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "MarkCompleted", ctx, webhookID, processingStartedAt)
+        ret0, _ := ret[0].(error)
+        return ret0
+}</span>
+
+// MarkCompleted indicates an expected call of MarkCompleted.
+func (mr *MockWebhookQueueRepositoryMockRecorder) MarkCompleted(ctx, webhookID, processingStartedAt any) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkCompleted", reflect.TypeOf((*MockWebhookQueueRepository)(nil).MarkCompleted), ctx, webhookID, processingStartedAt)
+}</span>
+
+// MarkFailed mocks base method.
+func (m *MockWebhookQueueRepository) MarkFailed(ctx context.Context, webhookID int64, errorMsg string) error <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "MarkFailed", ctx, webhookID, errorMsg)
+        ret0, _ := ret[0].(error)
+        return ret0
+}</span>
+
+// MarkFailed indicates an expected call of MarkFailed.
+func (mr *MockWebhookQueueRepositoryMockRecorder) MarkFailed(ctx, webhookID, errorMsg any) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkFailed", reflect.TypeOf((*MockWebhookQueueRepository)(nil).MarkFailed), ctx, webhookID, errorMsg)
+}</span>
+
+// Update mocks base method.
+func (m *MockWebhookQueueRepository) Update(ctx context.Context, webhook *entities.WebhookQueue) error <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "Update", ctx, webhook)
+        ret0, _ := ret[0].(error)
+        return ret0
+}</span>
+
+// Update indicates an expected call of Update.
+func (mr *MockWebhookQueueRepositoryMockRecorder) Update(ctx, webhook any) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockWebhookQueueRepository)(nil).Update), ctx, webhook)
+}</span>
+
+// UpdateRetryAttempt mocks base method.
+func (m *MockWebhookQueueRepository) UpdateRetryAttempt(ctx context.Context, webhookID int64, retryLevel int, startedAt time.Time, completedAt *time.Time, durationMs int64, httpStatus int, responseBody, errorMsg string) error <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "UpdateRetryAttempt", ctx, webhookID, retryLevel, startedAt, completedAt, durationMs, httpStatus, responseBody, errorMsg)
+        ret0, _ := ret[0].(error)
+        return ret0
+}</span>
+
+// UpdateRetryAttempt indicates an expected call of UpdateRetryAttempt.
+func (mr *MockWebhookQueueRepositoryMockRecorder) UpdateRetryAttempt(ctx, webhookID, retryLevel, startedAt, completedAt, durationMs, httpStatus, responseBody, errorMsg any) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRetryAttempt", reflect.TypeOf((*MockWebhookQueueRepository)(nil).UpdateRetryAttempt), ctx, webhookID, retryLevel, startedAt, completedAt, durationMs, httpStatus, responseBody, errorMsg)
+}</span>
+</pre>
+		
+		<pre class="file" id="file19" style="display: none">// Code generated by MockGen. DO NOT EDIT.
+// Source: internal\domain\services\webhook_service.go
+//
+// Generated by this command:
+//
+//        mockgen -source internal\domain\services\webhook_service.go -destination internal\mocks\mock_webhook_service.go -package mocks
+//
+
+// Package mocks is a generated GoMock package.
+package mocks
+
+import (
+        context "context"
+        reflect "reflect"
+        entities "webhook-processor/internal/domain/entities"
+        services "webhook-processor/internal/domain/services"
+
+        gomock "go.uber.org/mock/gomock"
+)
+
+// MockWebhookService is a mock of WebhookService interface.
+type MockWebhookService struct {
+        ctrl     *gomock.Controller
+        recorder *MockWebhookServiceMockRecorder
+        isgomock struct{}
+}
+
+// MockWebhookServiceMockRecorder is the mock recorder for MockWebhookService.
+type MockWebhookServiceMockRecorder struct {
+        mock *MockWebhookService
+}
+
+// NewMockWebhookService creates a new mock instance.
+func NewMockWebhookService(ctrl *gomock.Controller) *MockWebhookService <span class="cov0" title="0">{
+        mock := &amp;MockWebhookService{ctrl: ctrl}
+        mock.recorder = &amp;MockWebhookServiceMockRecorder{mock}
+        return mock
+}</span>
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockWebhookService) EXPECT() *MockWebhookServiceMockRecorder <span class="cov0" title="0">{
+        return m.recorder
+}</span>
+
+// SendWebhook mocks base method.
+func (m *MockWebhookService) SendWebhook(ctx context.Context, webhook *entities.WebhookQueue) (*services.WebhookResponse, error) <span class="cov0" title="0">{
+        m.ctrl.T.Helper()
+        ret := m.ctrl.Call(m, "SendWebhook", ctx, webhook)
+        ret0, _ := ret[0].(*services.WebhookResponse)
+        ret1, _ := ret[1].(error)
+        return ret0, ret1
+}</span>
+
+// SendWebhook indicates an expected call of SendWebhook.
+func (mr *MockWebhookServiceMockRecorder) SendWebhook(ctx, webhook any) *gomock.Call <span class="cov0" title="0">{
+        mr.mock.ctrl.T.Helper()
+        return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendWebhook", reflect.TypeOf((*MockWebhookService)(nil).SendWebhook), ctx, webhook)
+}</span>
+</pre>
+		
+		<pre class="file" id="file20" style="display: none">package http
+
+import (
+        "time"
+
+        "webhook-processor/internal/application/services"
+        "webhook-processor/internal/domain/enums"
+)
+
+// HTTP Transport DTOs - These are specific to the HTTP transport layer
+// They handle JSON marshaling/unmarshaling and HTTP-specific concerns
+
+// CreateWebhookRequest represents an HTTP request to create a webhook
+type CreateWebhookRequest struct {
+        EventType enums.EventType `json:"event_type" validate:"required"`
+        EventID   string          `json:"event_id"`
+        ConfigID  int64           `json:"config_id" validate:"required,min=1"`
+}
+
+// CreateWebhookResponse represents an HTTP response after creating a webhook
+type CreateWebhookResponse struct {
+        Success   bool   `json:"success"`
+        Message   string `json:"message"`
+        QueueID   string `json:"queue_id,omitempty"`
+        CreatedAt string `json:"created_at,omitempty"` // ISO 8601 string for HTTP
+}
+
+// HealthResponse represents HTTP response for service health status
+type HealthResponse struct {
+        Status       string            `json:"status"`
+        Version      string            `json:"version"`
+        Timestamp    string            `json:"timestamp"` // ISO 8601 string for HTTP
+        Dependencies map[string]string `json:"dependencies"`
+        Uptime       string            `json:"uptime"` // Duration string for HTTP
+}
+
+// Conversion functions between HTTP DTOs and Application DTOs
+
+// ToApplicationCommand converts HTTP request to application command
+func (r CreateWebhookRequest) ToApplicationCommand() services.CreateWebhookCommand <span class="cov8" title="1">{
+        return services.CreateWebhookCommand{
+                EventType: r.EventType,
+                EventID:   r.EventID,
+                ConfigID:  r.ConfigID,
+        }
+}</span>
+
+// FromApplicationResult converts application result to HTTP response
+func (r *CreateWebhookResponse) FromApplicationResult(result *services.CreateWebhookResult) <span class="cov8" title="1">{
+        r.Success = result.Success
+        r.Message = result.Message
+        r.QueueID = result.QueueID
+        if !result.CreatedAt.IsZero() </span><span class="cov8" title="1">{
+                r.CreatedAt = result.CreatedAt.Format(time.RFC3339)
+        }</span>
+}
+
+// FromApplicationResult converts application health result to HTTP response
+func (r *HealthResponse) FromApplicationResult(result *services.HealthResult) <span class="cov8" title="1">{
+        r.Status = result.Status
+        r.Version = result.Version
+        r.Timestamp = result.Timestamp.Format(time.RFC3339)
+        r.Dependencies = result.Dependencies
+        r.Uptime = result.Uptime.String()
+}</span>
+</pre>
+		
+		<pre class="file" id="file21" style="display: none">package http
+
+import (
+        "context"
+
+        "github.com/go-kit/kit/endpoint"
+        "github.com/go-kit/log"
+)
+
+// Endpoints holds all the service endpoints
+type Endpoints struct {
+        CreateWebhookEndpoint endpoint.Endpoint
+        GetHealthEndpoint     endpoint.Endpoint
+}
+
+// MakeEndpoints creates all service endpoints (middleware applied at HTTP level)
+func MakeEndpoints(svc Service, logger log.Logger) Endpoints <span class="cov8" title="1">{
+        return Endpoints{
+                CreateWebhookEndpoint: makeCreateWebhookEndpoint(svc),
+                GetHealthEndpoint:     makeGetHealthEndpoint(svc),
+        }
+}</span>
+
+// makeCreateWebhookEndpoint creates the create webhook endpoint
+func makeCreateWebhookEndpoint(svc Service) endpoint.Endpoint <span class="cov8" title="1">{
+        return func(ctx context.Context, request interface{}) (interface{}, error) </span><span class="cov8" title="1">{
+                req := request.(CreateWebhookRequest)
+                response, err := svc.CreateWebhook(ctx, req)
+                if err != nil </span><span class="cov8" title="1">{
+                        return response, err
+                }</span>
+                <span class="cov8" title="1">return response, nil</span>
+        }
+}
+
+// makeGetHealthEndpoint creates the health check endpoint
+func makeGetHealthEndpoint(svc Service) endpoint.Endpoint <span class="cov8" title="1">{
+        return func(ctx context.Context, request interface{}) (interface{}, error) </span><span class="cov8" title="1">{
+                response, err := svc.GetHealth(ctx)
+                if err != nil </span><span class="cov0" title="0">{
+                        return response, err
+                }</span>
+                <span class="cov8" title="1">return response, nil</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file22" style="display: none">package http
+
+import (
+        "context"
+        "encoding/json"
+        "net/http"
+
+        httptransport "github.com/go-kit/kit/transport/http"
+        "github.com/go-kit/log"
+        "github.com/gorilla/mux"
+        "github.com/prometheus/client_golang/prometheus/promhttp"
+)
+
+// NewHTTPHandler creates a new HTTP handler with all routes
+func NewHTTPHandler(svc Service, logger log.Logger) http.Handler <span class="cov8" title="1">{
+        endpoints := MakeEndpoints(svc, logger)
+
+        // Create HTTP handlers using Go-Kit transport
+        createWebhookHandler := httptransport.NewServer(
+                endpoints.CreateWebhookEndpoint,
+                decodeCreateWebhookRequest,
+                encodeResponse,
+                httptransport.ServerBefore(httptransport.PopulateRequestContext),
+        )
+
+        getHealthHandler := httptransport.NewServer(
+                endpoints.GetHealthEndpoint,
+                decodeGetHealthRequest,
+                encodeResponse,
+                httptransport.ServerBefore(httptransport.PopulateRequestContext),
+        )
+
+        router := mux.NewRouter()
+
+        // Register routes
+        router.Handle("/webhooks", createWebhookHandler).Methods("POST")
+        router.Handle("/health", getHealthHandler).Methods("GET")
+        router.Handle("/metrics", promhttp.Handler()).Methods("GET")
+
+        // Add HTTP middleware
+        router.Use(loggingMiddleware(logger))
+        router.Use(corsMiddleware)
+        router.Use(recoveryMiddleware(logger))
+
+        return router
+}</span>
+
+// Request decoders
+
+// decodeCreateWebhookRequest decodes the create webhook request
+func decodeCreateWebhookRequest(_ context.Context, r *http.Request) (interface{}, error) <span class="cov8" title="1">{
+        var req CreateWebhookRequest
+        if err := json.NewDecoder(r.Body).Decode(&amp;req); err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">return req, nil</span>
+}
+
+// decodeGetHealthRequest decodes the health check request (no body)
+func decodeGetHealthRequest(_ context.Context, r *http.Request) (interface{}, error) <span class="cov8" title="1">{
+        return nil, nil
+}</span>
+
+// Response encoder
+
+// encodeResponse encodes the response as JSON
+func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error <span class="cov8" title="1">{
+        w.Header().Set("Content-Type", "application/json")
+        return json.NewEncoder(w).Encode(response)
+}</span>
+</pre>
+		
+		<pre class="file" id="file23" style="display: none">package http
+
+import (
+        "net/http"
+        "time"
+
+        "github.com/go-kit/log"
+        "github.com/go-kit/log/level"
+)
+
+// responseWriterWrapper wraps http.ResponseWriter to capture status code
+type responseWriterWrapper struct {
+        http.ResponseWriter
+        statusCode int
+}
+
+func (w *responseWriterWrapper) WriteHeader(statusCode int) <span class="cov8" title="1">{
+        w.statusCode = statusCode
+        w.ResponseWriter.WriteHeader(statusCode)
+}</span>
+
+// loggingMiddleware logs HTTP requests
+func loggingMiddleware(logger log.Logger) func(http.Handler) http.Handler <span class="cov8" title="1">{
+        return func(next http.Handler) http.Handler </span><span class="cov8" title="1">{
+                return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="1">{
+                        start := time.Now().UTC()
+
+                        // Create a response writer wrapper to capture status code
+                        wrapper := &amp;responseWriterWrapper{ResponseWriter: w, statusCode: http.StatusOK}
+
+                        // Call the next handler
+                        next.ServeHTTP(wrapper, r)
+
+                        // Log the request
+                        level.Info(logger).Log(
+                                "component", "http",
+                                "method", r.Method,
+                                "path", r.URL.Path,
+                                "remote_addr", r.RemoteAddr,
+                                "user_agent", r.UserAgent(),
+                                "status", wrapper.statusCode,
+                                "duration", time.Since(start),
+                        )
+                }</span>)
+        }
+}
+
+// corsMiddleware adds CORS headers
+func corsMiddleware(next http.Handler) http.Handler <span class="cov8" title="1">{
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="1">{
+                w.Header().Set("Access-Control-Allow-Origin", "*")
+                w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+                w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+                if r.Method == "OPTIONS" </span><span class="cov0" title="0">{
+                        w.WriteHeader(http.StatusOK)
+                        return
+                }</span>
+
+                <span class="cov8" title="1">next.ServeHTTP(w, r)</span>
+        })
+}
+
+// recoveryMiddleware recovers from panics
+func recoveryMiddleware(logger log.Logger) func(http.Handler) http.Handler <span class="cov8" title="1">{
+        return func(next http.Handler) http.Handler </span><span class="cov8" title="1">{
+                return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov8" title="1">{
+                        defer func() </span><span class="cov8" title="1">{
+                                if err := recover(); err != nil </span><span class="cov8" title="1">{
+                                        level.Error(logger).Log(
+                                                "panic", err,
+                                                "method", r.Method,
+                                                "path", r.URL.Path,
+                                        )
+
+                                        w.Header().Set("Content-Type", "application/json")
+                                        w.WriteHeader(http.StatusInternalServerError)
+                                        w.Write([]byte(`{"error": "Internal server error", "success": false}`))
+                                }</span>
+                        }()
+                        <span class="cov8" title="1">next.ServeHTTP(w, r)</span>
+                })
+        }
+}
+</pre>
+		
+		<pre class="file" id="file24" style="display: none">package http
+
+import (
+        "context"
+
+        "webhook-processor/internal/application/services"
+)
+
+// Service defines the interface for HTTP transport operations
+type Service interface {
+        // CreateWebhook handles webhook creation requests
+        CreateWebhook(ctx context.Context, req CreateWebhookRequest) (CreateWebhookResponse, error)
+
+        // GetHealth handles health check requests
+        GetHealth(ctx context.Context) (HealthResponse, error)
+}
+
+// service implements the Service interface
+type service struct {
+        appService services.WebhookApplicationService
+}
+
+// NewService creates a new HTTP transport service
+func NewService(appService services.WebhookApplicationService) Service <span class="cov8" title="1">{
+        return &amp;service{
+                appService: appService,
+        }
+}</span>
+
+// CreateWebhook handles HTTP webhook creation requests
+func (s *service) CreateWebhook(ctx context.Context, req CreateWebhookRequest) (CreateWebhookResponse, error) <span class="cov8" title="1">{
+        // Convert HTTP request to application command
+        cmd := req.ToApplicationCommand()
+
+        // Call application service
+        result, err := s.appService.CreateWebhook(ctx, cmd)
+        if err != nil </span><span class="cov8" title="1">{
+                return CreateWebhookResponse{
+                        Success: false,
+                        Message: "Failed to create webhook: " + err.Error(),
+                }, err
+        }</span>
+
+        // Convert application result to HTTP response
+        <span class="cov8" title="1">var response CreateWebhookResponse
+        response.FromApplicationResult(result)
+
+        return response, nil</span>
+}
+
+// GetHealth handles HTTP health check requests
+func (s *service) GetHealth(ctx context.Context) (HealthResponse, error) <span class="cov8" title="1">{
+        // Call application service
+        result, err := s.appService.GetHealth(ctx)
+        if err != nil </span><span class="cov8" title="1">{
+                return HealthResponse{}, err
+        }</span>
+
+        // Convert application result to HTTP response
+        <span class="cov8" title="1">var response HealthResponse
+        response.FromApplicationResult(result)
+
+        return response, nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
