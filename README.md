@@ -333,7 +333,3 @@ docker-compose exec postgres psql -U postgres -d webhook_processor -c "SELECT st
 2. Add tests for new functionality
 3. Update documentation
 4. Use conventional commit messages
-
-## License
-
-[Add your license information here]
